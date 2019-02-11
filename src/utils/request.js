@@ -17,7 +17,7 @@
   });
 
   export default service
-  service.interceptors.request.use(config => {
+  service.interceptors.request.use( config => {
     config.headers['token'] = tools.getToken() 
     return config
   }, error => {
@@ -27,20 +27,19 @@
   });
 
   // respone interceptor
-  service.interceptors.response.use(
-    response => {
-    // console.log(response)
-      if(response.data.error==405){
+  service.interceptors.response.use( response => {
+      // console.log(response)
+      if( response.data.error==405 ){
         router.replace({path:"/"});//去登录; 
         response.data.data={};    
         return response;
-      }else if(response.data.error==403){
+      }else if( response.data.error == 403 ){
       // console.log('403');
         //router.back();
         response.data.data={};
         return response;     
       }else{
-          return response;
+          return response ;
       }    
     },
 
@@ -68,7 +67,7 @@
         method:'POST',
         data:data,
         headers:{
-          'eryi-token':'2373c588-08e5-4869-8f31-9652ed8ce0e4'
+          'eryi-token':'19ea81fe-6ab3-49ff-9585-e830600c2fb4'
         }
       }).then((res)=>{
         resolve(res.data);
@@ -102,10 +101,10 @@
           'token':tools.getToken(),
         }      
       }).then((res)=>{
-        resolve(res.data);
+        resolve( res.data );
         loading_fn && loading_fn.close(); //关闭；
-      }).catch(err=>{
-        console.log(err);
+      }).catch( err =>{
+        console.log( err );
         reject(err);
         // Message.close()
         loading_fn && loading_fn.close(); //关闭；

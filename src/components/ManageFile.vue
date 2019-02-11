@@ -21,36 +21,36 @@
                 <el-col :span="22">
                     <el-input 
                         v-model="requestParams.prefix"
-                        @keyup.enter.native="getData()">
+                        @keyup.enter.native="getData()"
+                        @input ='pathChange'>
                     </el-input>
                 </el-col>
-                
+    
             </el-row>
             <el-row class="folder-box">
                 <span 
-                    v-for="(i,idx,key) in this.resouceData.commonPrefixes"
+                    v-for="(item,idx,key) in this.resouceData.commonPrefixes"
                     :key="key"
                     class="folder"
-                    @contextmenu="showRightMenu()"
-                    @dblclick="openFolder(i)">
+                    @dblclick="openFolder(item)">
                     <img 
                     src="@/assets/img/folder.png" 
                     alt="" 
                     class="folderImg"/>
-                    <span class="fileName">{{handleFolder(i,idx)}}</span>
+                    <span class="fileName">{{handleFolder(item,idx)}}</span>
                 </span>
                 <span 
-                    v-for="(item,index) in this.resouceData.items"
+                    v-for="(itm,index) in this.resouceData.items"
                     :key="index"
                     class="folder"
-                    @contextmenu="showRightMenu(item)">
+                    @contextmenu="showRightMenu(itm,index)">
                     <img 
-                    :src="getIconSrc(item)" 
+                    :src="getIconSrc(itm)" 
                     alt="" 
                     class="folderImg"/>
                     <span 
                         class="fileName">
-                        {{handleFile(item.key)}}
+                        {{handleFile(itm.key)}}
                     </span>
                 </span>
             </el-row>
@@ -60,19 +60,22 @@
                 v-show="visibleDetList" 
                 :style="{left:left+'px',top:top+'px'}">
                 <li>属性大风大风</li>
-                <li>复旦复</li>
+                <li @click="deleteFile()">删除</li>
                 <li @click="changeSaveTpye()">更改存储类型</li>
                 <li @click="onProperty(requestParams.prefix)">属性</li>
             </ul>
 
             <ul 
-                class="attribute-box" 
-                v-show="propertyShow" 
-                :style="{left:left+'px',top:top+'px'}">
+            id="attribute-box" 
+            v-show="propertyShow" 
+            @mousedown="move"
+            :style="{left:left+'px',top:top+'px'}">
+                
                 <li 
                     class="closeBtn" 
-                    @click="closeBtn()">
-                    X
+                    >
+                    <span>{{this.attribute}}属性</span>
+                    <i @click="closeBtn()">X</i>
                 </li>
                 <li>
                     <el-form
@@ -95,7 +98,6 @@
                             label="上传时间">
                             <span
                                 class="comlabel">
-                                <!-- {{getTime(propertyData.putTime)}} -->
                                 {{propertyData.putTime}}
                             </span>
                         </el-form-item>
@@ -103,14 +105,22 @@
                 </li>
             </ul>
 
-            <!-- <el-row>
-
-            </el-row> -->
 
         </el-card>
 
-        
-        
+        <el-dialog
+        :visible.sync="saveType" 
+        width="20%" 
+        :modal-append-to-body="false"
+        @close='closeDialog'>
+            <template>
+                <el-radio-group v-model="changeSaveParams.newType" @change="saveChange">
+                    <el-radio  :label="0">普通存储</el-radio>
+                    <el-radio  :label="1">低频存储</el-radio> 
+                </el-radio-group>
+            </template>
+        </el-dialog>
+
     </div>
 </template>
 
@@ -128,7 +138,7 @@
         data(){
             return{
                 requestParams:{
-                    prefix:''
+                    prefix:localStorage.folderPath
                 },
                 propertyParams:{
                     filename:''
@@ -137,13 +147,18 @@
                     filename:"",
                     newType:""
                 },
+                deleteFileParams:{
+                    files:[{name:''}]
+                },
                 resouceData:'',
                 visibleDetList:false,
                 propertyShow:false,
                 left:"",
                 top:"",
                 history:[],
-                propertyData:{}
+                propertyData:{},
+                saveType:false,
+                attribute:''
             }
         },
         created(){  
@@ -165,21 +180,29 @@
                 let fileName = val.substring(index+1, len)
                 return fileName;
             },
+            //获取目录下文件
             getData(){
                 this.$store.dispatch("POST_RESOURCE_GETLIST",this.requestParams).then((res)=>{
                     console.log("res",res);
                     this.resouceData = res.data;
                 })
             },
-            showRightMenu(val){
+            pathChange(){
+                localStorage.folderPath = this.requestParams.prefix
+                console.log("123")
+            },
+            showRightMenu(itm,index){
                 event.preventDefault();
-                
-                console.log("123",val)
+                console.log("123456",itm);
+                this.propertyParams.filename = itm.key;
+                this.changeSaveParams.filename = itm.key;
+                this.changeSaveParams.newType = itm.type;
 
-                this.propertyParams.filename = val.key;
+                this.attribute = itm.key
 
-                this.changeSaveParams.filename = val.key;
-                this.changeSaveParams.newType = val.type;
+                this.deleteFileParams.files.map((item,index)=>{
+                    item.name = itm.key
+                })
 
                 this.visibleDetList = true;
                 this.left = event.clientX;
@@ -188,9 +211,9 @@
             openFolder(val){
                 console.log("abc",val)
                 this.history.push(val);
-
+                localStorage.setItem('folderPath',val)
+                console.log('folderPath',localStorage.folderPath)
                 console.log("efg",this.history);
-
                 this.requestParams.prefix = val;
                 this.getData();
             },
@@ -204,21 +227,19 @@
                 let second = val.lastIndexOf('/',index-1);
                 let dir = val.slice(0,second+1);
                 this.requestParams.prefix = dir;
+                console.log('dir',dir)
+                localStorage.folderPath = dir;
                 this.getData();
             },
-            // public/private/1.0/
-            
-            // ["public/", "public/private/", "public/private/1.0/"]
-
-            // public/private/1.0/
-
             advance(){
                 console.log("888");
                 let len = this.history.length-1;
                 this.requestParams.prefix = this.history[len];
+                localStorage.folderPath = this.history[len]
                 console.log("666",this.requestParams.prefix);
                 this.getData();
             },
+            //获取文件详情
             onProperty(){
                 this.propertyShow = true;
                 this.$store.dispatch("POST_RESOURCE_DETAIL",this.propertyParams).then((res)=>{
@@ -229,25 +250,52 @@
             closeBtn(){
                 this.propertyShow = false;
             },
-            // getTime(val){
-            //     console.log('val123',val)
-            //     if(val){
-            //         // let Timestamp = val.slice(-1,-8)
-            //     }
-                
-            //     // console.log('Timestamp',Timestamp)
-            //     let timeDate = moment(1548992994).format("YYYY-MM-DD HH:mm:ss")
-            //     return timeDate;
-            // },
+            //更改存储类型
             changeSaveTpye(){
-                console.log("123")
-                this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
+                this.saveType = true
+
+
+                // this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
                     // console.log("resProperty",res);
                     // this.propertyData = res.data;
+                // })
+            },
+            
+            closeDialog(){
+                this.saveType = false;
+            },
+            saveChange(){
+                console.log("999")
+                this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
+                    this.closeDialog();
                 })
-            }
+                
+            },
+            //删除文件
+            deleteFile(){
+                this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then((res)=>{
+                    this.getData();
+                })
+            },
+            move(e){
+                e.preventDefault();
+                var target = document.getElementById('attribute-box');
+                let disX = e.clientX - target.offsetLeft;
+                let disY = e.clientY - target.offsetTop;
+                document.onmousemove = (evt)=> { 
+                    e.preventDefault();
+                    let left = evt.clientX - disX;    
+                    let top = evt.clientY - disY;
+                    this.top = top;
+                    this.left = left;
+                };
+                document.onmouseup = () => {
+                    document.onmousemove = null;
+                };
+            }  
+
         },
-        mounted() {
+        mounted(){
             this.getData();
             if(!this.visibleDetList){
                 addEventListener("click",()=>{
@@ -286,7 +334,6 @@
                 }
             }
         }
-        
         .card-box{
             position: fixed;
             top: 0;
@@ -311,16 +358,17 @@
                     border-bottom: 1px solid transparent;
                 }
             }
-            .attribute-box{
-                width: 300px;
-                background-color: #fff;
+            #attribute-box{
+                width: 250px;
+                background-color: #DBDBDB;
                 border:1px solid #ccc;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                padding: 15px;
+                position:fixed;
+                left:0;
+                top:0;
+                padding: 10px;
                 .closeBtn{
+                    display: flex;
+                    justify-content: space-between;
                     text-align: right;
                     margin-top: -5px;
                 }

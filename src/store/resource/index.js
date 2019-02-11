@@ -38,6 +38,7 @@ const resouceFile	 = {
 				})	
 			});	
 		},
+		//更改存储类型
 		POST_CHANGE_SAVE_TYPE({commit,state},requestData){
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_CHANGE_SAVE_TYPE,requestData,{isLoading:true}).then((res)=>{
@@ -45,6 +46,36 @@ const resouceFile	 = {
 						resolve(res);
 					}else{
 							Message({
+							type:'error',
+							message:res.message
+						});	
+					}
+				})	
+			});	
+		},
+		//上传文件
+		POST_UPLOADING_FILE({commit,state},requestData){
+			return new Promise((resolve,reject)=>{
+				HttpUtil.post(apiMap.POST_UPLOADING_FILE,requestData,{isLoading:true}).then((res)=>{
+					if(res.error==0){
+						resolve(res);
+					}else{
+						Message({
+							type:'error',
+							message:res.message
+						});	
+					}
+				})	
+			});	
+		},
+		//删除文件
+		POST_DELETE_FILE({commit,state},requestData){
+			return new Promise((resolve,reject)=>{
+				HttpUtil.post(apiMap.POST_DELETE_FILE,requestData,{isLoading:true}).then((res)=>{
+					if(res.error==0){
+						resolve(res);
+					}else{
+						Message({
 							type:'error',
 							message:res.message
 						});	
