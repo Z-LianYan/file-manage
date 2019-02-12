@@ -82,6 +82,36 @@ const resouceFile	 = {
 					}
 				})	
 			});	
+		},
+		//创建文件夹
+		POST_CREATE_FOLDER({commit,state},requestData){
+			return new Promise((resolve,reject)=>{
+				HttpUtil.post(apiMap.POST_CREATE_FOLDER,requestData,{isLoading:true}).then((res)=>{
+					if(res.error==0){
+						resolve(res);
+					}else{
+						Message({
+							type:'error',
+							message:res.message
+						});	
+					}
+				})	
+			});	
+		},
+		//删除文件夹
+		POST_DELETE_FOLDER({commit,state},requestData){
+			return new Promise((resolve,reject)=>{
+				HttpUtil.post(apiMap.POST_DELETE_FOLDER,requestData,{isLoading:true}).then((res)=>{
+					if(res.error==0){
+						resolve(res);
+					}else{
+						Message({
+							type:'error',
+							message:res.message
+						});	
+					}
+				})	
+			});	
 	   	},
 	}
 }

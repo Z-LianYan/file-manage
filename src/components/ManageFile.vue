@@ -10,59 +10,96 @@
                     </el-button>
                 </el-col>
                 <el-col 
-                    :span="1" 
-                    style="text-align:center">
+                :span="1" 
+                style="text-align:center">
                     <el-button 
                         type="text" 
                         icon="el-icon-arrow-right"
                         @click="advance()">
                     </el-button>
                 </el-col>
-                <el-col :span="22">
+                <el-col :span="20">
                     <el-input 
                         v-model="requestParams.prefix"
                         @keyup.enter.native="getData()"
                         @input ='pathChange'>
                     </el-input>
                 </el-col>
-    
+                <el-col :span='2' align='center'>
+                    <el-upload
+                    class="upload-demo"
+                    action="/API/common/upload"
+                    multiple
+                    :limit="3"
+                    :on-success="handleAvatarSuccess">
+                        <el-button type='text' class="el-icon-upload2"></el-button>
+                    </el-upload>
+                </el-col>
             </el-row>
-            <el-row class="folder-box">
-                <span 
+            <el-row>
+                <div class="folder-box" @contextmenu="menuContainer">
+                    <div 
                     v-for="(item,idx,key) in this.resouceData.commonPrefixes"
                     :key="key"
                     class="folder"
-                    @dblclick="openFolder(item)">
-                    <img 
-                    src="@/assets/img/folder.png" 
-                    alt="" 
-                    class="folderImg"/>
-                    <span class="fileName">{{handleFolder(item,idx)}}</span>
-                </span>
-                <span 
-                    v-for="(itm,index) in this.resouceData.items"
+                    @dblclick="openFolder(item)"
+                    @contextmenu.prevent.stop="showRightMenu(item)">
+                        <img 
+                        src="@/assets/img/folder.png" 
+                        alt="" 
+                        class="folderImg"/>
+                        <span class="fileName">{{handleFolder(item,idx)}}</span>
+                    </div>
+                    <div 
+                    v-for="(item,index) in this.resouceData.items"
                     :key="index"
                     class="folder"
-                    @contextmenu="showRightMenu(itm,index)">
-                    <img 
-                    :src="getIconSrc(itm)" 
-                    alt="" 
-                    class="folderImg"/>
-                    <span 
-                        class="fileName">
-                        {{handleFile(itm.key)}}
-                    </span>
-                </span>
+                    @contextmenu.prevent.stop="showRightMenu(item)">
+                        <img 
+                        :src="getIconSrc(item)" 
+                        alt="" 
+                        class="folderImg"/>
+                        <span 
+                            class="fileName">
+                            {{handleFile(item.key)}}
+                        </span>
+                    </div>
+
+                </div>
+                
+                
             </el-row>
 
             <ul 
                 class='contextmenu' 
                 v-show="visibleDetList" 
                 :style="{left:left+'px',top:top+'px'}">
-                <li>属性大风大风</li>
-                <li @click="deleteFile()">删除</li>
-                <li @click="changeSaveTpye()">更改存储类型</li>
-                <li @click="onProperty(requestParams.prefix)">属性</li>
+                <li 
+                @mouseover="changeSaveTpye()" 
+                @mouseout="outSaveType()" 
+                class="change-save"
+                v-show="visibleCommon">
+                    <i></i>
+                    <span>更改存储类型</span>
+                    <i class="fa fa-angle-right"></i>
+                    <div v-show="saveType" class="change-save-type">
+                        <el-radio-group v-model="changeSaveParams.newType" @change="saveChange">
+                            <el-radio :label="0">普通存储</el-radio>
+                            <el-radio :label="1">低频存储</el-radio> 
+                        </el-radio-group>
+                    </div>
+                </li>
+                <!-- <li @click="deleteFile()">删除</li> -->
+                <li @click="deleteFileFolder()">
+                    <i class="fa fa-trash-o"></i>
+                    <span>删除</span>
+                    <i></i>
+                </li>
+                <li @click="onProperty(requestParams.prefix)" v-show="visibleCommon">
+                    <i></i>
+                    <span>属性</span>
+                    <i></i>
+                </li>
             </ul>
 
             <ul 
@@ -70,16 +107,13 @@
             v-show="propertyShow" 
             @mousedown="move"
             :style="{left:left+'px',top:top+'px'}">
-                
                 <li 
-                    class="closeBtn" 
-                    >
-                    <span>{{this.attribute}}属性</span>
-                    <i @click="closeBtn()">X</i>
+                class="closeBtn">
+                    <span >{{handleFile(attribute)}}属性</span>
+                    <i @click="closeBtn()" class="fa fa-close"></i>
                 </li>
                 <li>
-                    <el-form
-                        >
+                    <el-form>
                         <el-form-item 
                             label="类型">
                             <span
@@ -105,21 +139,28 @@
                 </li>
             </ul>
 
+            <ul
+            class='contextmenu' 
+            v-show="visibleMenuList"
+            :style="{left:left+'px',top:top+'px'}">
+                <li 
+                class="news"
+                @mouseover="overNews()" 
+                @mouseout="outNews()">
+                    <i class="el-icon-plus"></i>
+                    <span>新建</span>
+                    <i class="fa fa-angle-right"></i>
+                    <ul class="newsContent" v-show="visibleNews">
+                        <li>文件夹</li>
+                    </ul>
+                </li>
+            </ul>
 
         </el-card>
 
-        <el-dialog
-        :visible.sync="saveType" 
-        width="20%" 
-        :modal-append-to-body="false"
-        @close='closeDialog'>
-            <template>
-                <el-radio-group v-model="changeSaveParams.newType" @change="saveChange">
-                    <el-radio  :label="0">普通存储</el-radio>
-                    <el-radio  :label="1">低频存储</el-radio> 
-                </el-radio-group>
-            </template>
-        </el-dialog>
+
+
+       
 
     </div>
 </template>
@@ -150,9 +191,18 @@
                 deleteFileParams:{
                     files:[{name:''}]
                 },
+                deleteFolderParams:{
+                    folder_name:""
+                },
+                createFolderParams:{
+                    folder_name:''
+                },
                 resouceData:'',
                 visibleDetList:false,
                 propertyShow:false,
+                visibleNews:false,
+                visibleCommon:true,
+                visibleMenuList:false,
                 left:"",
                 top:"",
                 history:[],
@@ -191,18 +241,45 @@
                 localStorage.folderPath = this.requestParams.prefix
                 console.log("123")
             },
-            showRightMenu(itm,index){
-                event.preventDefault();
-                console.log("123456",itm);
-                this.propertyParams.filename = itm.key;
-                this.changeSaveParams.filename = itm.key;
-                this.changeSaveParams.newType = itm.type;
+            menuContainer(){
+                console.log("11111")
+                this.visibleMenuList = true;
+                this.left = event.clientX;
+                this.top = event.clientY;
+            },
+            showRightMenu(itm){
+                console.log("e")
+                console.log("123456",itm instanceof Object);
+                console.log("123",itm);
+                this.visibleCommon = true;
+                // if(itm instanceof Object){
+                //     this.propertyParams.filename = itm.key;
+                //     this.changeSaveParams.filename = itm.key;
+                //     this.changeSaveParams.newType = itm.type;
+                //     this.attribute = itm.key
+                //     this.deleteFileParams.files.map((item,index)=>{
+                //         item.name = itm.key
+                //     })
+                // }else{
+                //     this.visibleCommon = false
+                //     this.deleteFolderParams.folder_name = itm
+                // }
+                let itmStr = new String(itm)
+                if(itm instanceof Object){
+                    this.propertyParams.filename = itm.key;
+                    this.changeSaveParams.filename = itm.key;
+                    this.changeSaveParams.newType = itm.type;
+                    this.attribute = itm.key
+                    this.deleteFileParams.files.map((item,index)=>{
+                        item.name = itm.key
+                    })
+                }else if(itmStr instanceof String){
+                    this.visibleCommon = false
+                    this.deleteFolderParams.folder_name = itm
+                }
 
-                this.attribute = itm.key
 
-                this.deleteFileParams.files.map((item,index)=>{
-                    item.name = itm.key
-                })
+
 
                 this.visibleDetList = true;
                 this.left = event.clientX;
@@ -232,7 +309,6 @@
                 this.getData();
             },
             advance(){
-                console.log("888");
                 let len = this.history.length-1;
                 this.requestParams.prefix = this.history[len];
                 localStorage.folderPath = this.history[len]
@@ -253,29 +329,43 @@
             //更改存储类型
             changeSaveTpye(){
                 this.saveType = true
-
-
-                // this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
-                    // console.log("resProperty",res);
-                    // this.propertyData = res.data;
-                // })
+            },
+            outSaveType(){
+                this.saveType = false;
             },
             
             closeDialog(){
                 this.saveType = false;
             },
             saveChange(){
-                console.log("999")
                 this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
                     this.closeDialog();
-                })
-                
+                    this.getData();
+                }) 
             },
-            //删除文件
-            deleteFile(){
-                this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then((res)=>{
+            overNews(){
+                this.visibleNews = true;
+            },
+            outNews(){
+                this.visibleNews = false;
+            },
+            //创建文件夹
+            createFold(){
+                this.$store.dispatch("POST_DELETE_FILE",this.createFolderParams).then((res)=>{
                     this.getData();
                 })
+            },
+            //删除文件$文件夹
+            deleteFileFolder(){
+                if(this.visibleCommon){
+                    this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then((res)=>{
+                        this.getData();
+                    })
+                }else{
+                    this.$store.dispatch("POST_DELETE_FOLDER",this.deleteFolderParams).then((res)=>{
+                        this.getData();
+                    })
+                }
             },
             move(e){
                 e.preventDefault();
@@ -292,7 +382,11 @@
                 document.onmouseup = () => {
                     document.onmousemove = null;
                 };
-            }  
+            },
+            handleAvatarSuccess(res, file) {
+                console.log('res',res,'file',file)
+                this.imageUrl = URL.createObjectURL(file.raw);
+            },  
 
         },
         mounted(){
@@ -300,6 +394,11 @@
             if(!this.visibleDetList){
                 addEventListener("click",()=>{
                     this.visibleDetList = false;
+                })
+            }
+            if(!this.visibleMenuList){
+                addEventListener("click",()=>{
+                    this.visibleMenuList = false;
                 })
             }
             window.oncontextmenu = ()=>{
@@ -319,10 +418,14 @@
         bottom: 0;
         .folder-box{
             display: flex;
+            height: 300px;
             margin: 30px 0 0 200px; 
+            // background-color: #fff;
             flex-wrap: wrap;
+            flex: 1;
             .folder{
                 display: flex;
+                height: 75px;
                 flex-flow: column;
                 margin-right: 20px;
                 .folderImg{
@@ -347,20 +450,52 @@
                 position: fixed;
                 background-color: #fff;
                 border: 1px solid #ccc;
-                text-align: center;
+                // text-align: center;
                 li{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    min-width: 140px;
                     padding: 10px;
-                    text-align: center;
+                    // text-align: center;
                     border-bottom: 1px solid #ccc;
+                    i{
+                        width: 10px;
+                    }
                     
                 }
                 li:nth-last-child(1){
                     border-bottom: 1px solid transparent;
                 }
+                .change-save{
+                    position: relative;
+                    .change-save-type{
+                        width: 215px;
+                        padding: 10px 7px;
+                        border: 1px solid #ccc;
+                        position: absolute;
+                        top: -1px;
+                        right: -215px;
+                        background-color: #fff;
+                    }
+                }
+                .news{
+                    position: relative;
+                    .newsContent{
+                        background-color: #fff;
+                        min-width: 140px;
+                        border: 1px solid #ccc;
+                        position: absolute;
+                        top: -1px;
+                        right: -142px;
+                    }
+
+                }
+                
             }
             #attribute-box{
                 width: 250px;
-                background-color: #DBDBDB;
+                background-color: #fff;
                 border:1px solid #ccc;
                 position:fixed;
                 left:0;
