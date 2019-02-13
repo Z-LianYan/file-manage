@@ -37,24 +37,31 @@
                 </el-col>
             </el-row>
             <el-row>
-                <div class="folder-box" @contextmenu="menuContainer">
+                <div 
+                class="folder-box" 
+                @contextmenu="menuContainer"
+                @click="comEvent">
                     <div 
-                    v-for="(item,idx,key) in this.resouceData.commonPrefixes"
+                    v-for="(item,index,key) in this.resouceData.commonPrefixes"
                     :key="key"
                     class="folder"
+                    :class="selectFolderIdx==index? 'active':''"
                     @dblclick="openFolder(item)"
-                    @contextmenu.prevent.stop="showRightMenu(item)">
+                    @contextmenu.prevent.stop="showRightMenu(item)"
+                    @click.stop="onSelectedFolder(index)">
                         <img 
                         src="@/assets/img/folder.png" 
                         alt="" 
                         class="folderImg"/>
-                        <span class="fileName">{{handleFolder(item,idx)}}</span>
+                        <span class="fileName">{{handleFolder(item)}}</span>
                     </div>
                     <div 
                     v-for="(item,index) in this.resouceData.items"
                     :key="index"
                     class="folder"
-                    @contextmenu.prevent.stop="showRightMenu(item)">
+                    :class="selectFileIdx==index? 'active':''"
+                    @contextmenu.prevent.stop="showRightMenu(item)"
+                    @click.stop="onSelectedFile(index)">
                         <img 
                         :src="getIconSrc(item)" 
                         alt="" 
@@ -63,12 +70,16 @@
                             class="fileName">
                             {{handleFile(item.key)}}
                         </span>
+                        <!-- <span 
+                            class="fileName"
+                            v-if="visibleRenameInput">
+                            {{handleFile(item.key)}}
+                        </span>
+                        <input type='text' v-model="item.key" style="width:80px;height:20px;text-align=center;border:1px solid red;"/> -->
                     </div>
-
                 </div>
-                
-                
             </el-row>
+
 
             <ul 
                 class='contextmenu' 
@@ -89,13 +100,17 @@
                         </el-radio-group>
                     </div>
                 </li>
-                <!-- <li @click="deleteFile()">删除</li> -->
                 <li @click="deleteFileFolder()">
                     <i class="fa fa-trash-o"></i>
                     <span>删除</span>
                     <i></i>
                 </li>
-                <li @click="onProperty(requestParams.prefix)" v-show="visibleCommon">
+                <li @click="renameFile" v-show="visibleCommon">
+                    <i></i>
+                    <span>重命名</span>
+                    <i></i>
+                </li>
+                <li @click="onProperty()" v-show="visibleCommon">
                     <i></i>
                     <span>属性</span>
                     <i></i>
@@ -116,22 +131,19 @@
                     <el-form>
                         <el-form-item 
                             label="类型">
-                            <span
-                                class="comlabel">
+                            <span class="comlabel">
                                 {{propertyData.mimeType}}
                             </span>
                         </el-form-item>
                         <el-form-item 
                             label="大小">
-                            <span
-                                class="comlabel">
+                            <span class="comlabel">
                                 {{propertyData.fsize}}
                             </span>
                         </el-form-item>
                         <el-form-item 
                             label="上传时间">
-                            <span
-                                class="comlabel">
+                            <span class="comlabel">
                                 {{propertyData.putTime}}
                             </span>
                         </el-form-item>
@@ -151,16 +163,37 @@
                     <span>新建</span>
                     <i class="fa fa-angle-right"></i>
                     <ul class="newsContent" v-show="visibleNews">
-                        <li>文件夹</li>
+                        <li @click="createFold">文件夹</li>
                     </ul>
                 </li>
+                <li @click="refresh">
+                    <i></i>
+                    <span>刷新</span>
+                    <i></i>
+                </li>
             </ul>
-
         </el-card>
 
+        <el-dialog
+        :visible.sync="visibleRename"
+        :modal-append-to-body="false"
+        align='center'
+        width='30%'>
+            <el-form 
+            :model="newFolderName" 
+            :rules="rules" 
+            ref="newFolderName" 
+            label-width="100px">
+                <el-form-item 
+                label="文件夹名称" 
+                prop="folderNane">
+                    <el-input 
+                    v-model="newFolderName.folderNane" 
+                    @keyup.enter.native="submitForm('newFolderName')"></el-input>
+                </el-form-item>
+            </el-form>
+        </el-dialog>
 
-
-       
 
     </div>
 </template>
@@ -197,23 +230,46 @@
                 createFolderParams:{
                     folder_name:''
                 },
+                newFolderName:{
+                    folderNane:''
+                },
+                rules:{
+                        folderNane: [
+                            { required: true, message: '请输入文件夹名', trigger: 'blur' },
+                            { pattern: /^((?!\/).)*$/gi, message: '文件夹名称不能包含/字符' }
+                        ]
+                },
+                renameFileParams:{
+                    srcKey:'',
+                    destKey:'',
+                    isForce:''
+                },
                 resouceData:'',
                 visibleDetList:false,
                 propertyShow:false,
                 visibleNews:false,
                 visibleCommon:true,
                 visibleMenuList:false,
+                visibleRename:false,
+                folderFileSelected:true,
+                visibleRenameInput:false,
                 left:"",
                 top:"",
                 history:[],
                 propertyData:{},
                 saveType:false,
-                attribute:''
+                attribute:'',
+                selectFolderIdx:null,
+                selectFileIdx:null
+                
             }
         },
         created(){  
         },
         methods:{
+            refresh(){
+                window.location.reload();
+            },
             getIconSrc(item){
                 var extname = this.getExtName(item.key);
                 return extnameMap[extname]?extnameMap[extname]:unknow_icon;
@@ -230,6 +286,26 @@
                 let fileName = val.substring(index+1, len)
                 return fileName;
             },
+            onSelectedFolder(index){
+                this.folderFileSelected = true;
+                this.selectFileIdx = null
+                if(this.folderFileSelected){
+                    this.selectFolderIdx = index;
+                }
+            },
+            onSelectedFile(index){
+                this.folderFileSelected = false;
+                this.selectFolderIdx = null
+                if(!this.folderFileSelected){
+                    this.selectFileIdx = index;
+                }
+            },
+            comEvent(){
+                this.visibleDetList = false;
+                this.visibleMenuList = false;
+                this.selectFolderIdx = null;
+                this.selectFileIdx = null
+            },
             //获取目录下文件
             getData(){
                 this.$store.dispatch("POST_RESOURCE_GETLIST",this.requestParams).then((res)=>{
@@ -242,28 +318,15 @@
                 console.log("123")
             },
             menuContainer(){
-                console.log("11111")
+                // console.log("11111")
                 this.visibleMenuList = true;
+                this.visibleDetList = false;
                 this.left = event.clientX;
                 this.top = event.clientY;
             },
             showRightMenu(itm){
-                console.log("e")
-                console.log("123456",itm instanceof Object);
-                console.log("123",itm);
+                this.visibleMenuList = false;
                 this.visibleCommon = true;
-                // if(itm instanceof Object){
-                //     this.propertyParams.filename = itm.key;
-                //     this.changeSaveParams.filename = itm.key;
-                //     this.changeSaveParams.newType = itm.type;
-                //     this.attribute = itm.key
-                //     this.deleteFileParams.files.map((item,index)=>{
-                //         item.name = itm.key
-                //     })
-                // }else{
-                //     this.visibleCommon = false
-                //     this.deleteFolderParams.folder_name = itm
-                // }
                 let itmStr = new String(itm)
                 if(itm instanceof Object){
                     this.propertyParams.filename = itm.key;
@@ -276,11 +339,9 @@
                 }else if(itmStr instanceof String){
                     this.visibleCommon = false
                     this.deleteFolderParams.folder_name = itm
+
+                    this.folderDir = itm
                 }
-
-
-
-
                 this.visibleDetList = true;
                 this.left = event.clientX;
                 this.top = event.clientY;
@@ -294,7 +355,7 @@
                 this.requestParams.prefix = val;
                 this.getData();
             },
-            handleFolder(i,idx){
+            handleFolder(i){
                 let dirName = i.split("/");
                 let len = dirName.length;
                 return dirName[len-2];
@@ -325,6 +386,7 @@
             },
             closeBtn(){
                 this.propertyShow = false;
+                this.visibleDetList = false;
             },
             //更改存储类型
             changeSaveTpye(){
@@ -340,6 +402,7 @@
             saveChange(){
                 this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
                     this.closeDialog();
+                    this.visibleDetList = false;
                     this.getData();
                 }) 
             },
@@ -351,11 +414,27 @@
             },
             //创建文件夹
             createFold(){
-                this.$store.dispatch("POST_DELETE_FILE",this.createFolderParams).then((res)=>{
+                this.visibleRename = true; 
+            },
+            createFolder(){
+                let folderDirctory = `${localStorage.folderPath}${this.newFolderName.folderNane}/`
+                this.createFolderParams.folder_name = folderDirctory
+                this.$store.dispatch("POST_CREATE_FOLDER",this.createFolderParams).then((res)=>{
+                    this.visibleRename = false;
                     this.getData();
                 })
             },
-            //删除文件$文件夹
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                if (valid) {
+                    this.createFolder();
+                } else {
+                    console.log('error submit!!');
+                    return false;
+                }
+                });
+            },
+            //删除文件&&文件夹
             deleteFileFolder(){
                 if(this.visibleCommon){
                     this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then((res)=>{
@@ -366,6 +445,12 @@
                         this.getData();
                     })
                 }
+            },
+            //重命名文件
+            renameFile(){
+                // this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then((res)=>{
+                //     this.getData();
+                // })
             },
             move(e){
                 e.preventDefault();
@@ -391,16 +476,6 @@
         },
         mounted(){
             this.getData();
-            if(!this.visibleDetList){
-                addEventListener("click",()=>{
-                    this.visibleDetList = false;
-                })
-            }
-            if(!this.visibleMenuList){
-                addEventListener("click",()=>{
-                    this.visibleMenuList = false;
-                })
-            }
             window.oncontextmenu = ()=>{
                 event.preventDefault()
             }
@@ -425,15 +500,20 @@
             flex: 1;
             .folder{
                 display: flex;
-                height: 75px;
+                height: 85px;
                 flex-flow: column;
-                margin-right: 20px;
+                align-items: center;
+                margin-right: 10px;
+                padding: 5px;
                 .folderImg{
                     width: 60px;
                     height: 55px;
                 }
                 .fileName{
                     text-align: center;
+                }
+                &.active{
+                    border: 1px solid #ccc;
                 }
             }
         }
@@ -483,15 +563,18 @@
                     position: relative;
                     .newsContent{
                         background-color: #fff;
-                        min-width: 140px;
+                        
                         border: 1px solid #ccc;
                         position: absolute;
                         top: -1px;
                         right: -142px;
+                        li{
+                            display: flex;
+                            justify-content: space-around;
+                        }
                     }
 
                 }
-                
             }
             #attribute-box{
                 width: 250px;
@@ -501,6 +584,7 @@
                 left:0;
                 top:0;
                 padding: 10px;
+                border-radius: 8px;
                 .closeBtn{
                     display: flex;
                     justify-content: space-between;
