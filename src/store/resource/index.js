@@ -82,6 +82,37 @@ const resouceFile	 = {
 					}
 				})	
 			});	
+		},
+		//复制文件
+		POST_COPY_FILE({commit,state},requestData){
+			return new Promise((resolve,reject)=>{
+				HttpUtil.post(apiMap.POST_COPY_FILE,requestData,{isLoading:true}).then((res)=>{
+					resolve(res);
+					// if(res.error==0){
+					// 	resolve(res);
+					// }else{
+					// 	Message({
+					// 		type:'error',
+					// 		message:res.message
+					// 	});	
+					// }
+				})	
+			});	
+		},
+		//重命名文件
+		POST_RENAME_FILE({commit,state},requestData){
+			return new Promise((resolve,reject)=>{
+				HttpUtil.post(apiMap.POST_RENAME_FILE,requestData,{isLoading:true}).then((res)=>{
+					if(res.error==0){
+						resolve(res);
+					}else{
+						Message({
+							type:'error',
+							message:res.message
+						});	
+					}
+				})	
+			});	
 	   	},
 		//删除文件
 		POST_DELETE_FILE({commit,state},requestData){
@@ -128,10 +159,11 @@ const resouceFile	 = {
 				})	
 			});	
 		},
-		//重命名文件
-		POST_RENAME_FILE({commit,state},requestData){
+
+		//获取静态资域名
+		POST_STATIC_HOST({commit,state},requestData){
 			return new Promise((resolve,reject)=>{
-				HttpUtil.post(apiMap.POST_RENAME_FILE,requestData,{isLoading:true}).then((res)=>{
+				HttpUtil.post(apiMap.POST_STATIC_HOST,requestData,{isLoading:true}).then((res)=>{
 					if(res.error==0){
 						resolve(res);
 					}else{
@@ -142,7 +174,8 @@ const resouceFile	 = {
 					}
 				})	
 			});	
-	   	},
+		},
+		
 	}
 }
 export default resouceFile;
