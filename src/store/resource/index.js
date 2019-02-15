@@ -88,14 +88,6 @@ const resouceFile	 = {
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_COPY_FILE,requestData,{isLoading:true}).then((res)=>{
 					resolve(res);
-					// if(res.error==0){
-					// 	resolve(res);
-					// }else{
-					// 	Message({
-					// 		type:'error',
-					// 		message:res.message
-					// 	});	
-					// }
 				})	
 			});	
 		},
@@ -120,6 +112,10 @@ const resouceFile	 = {
 				HttpUtil.post(apiMap.POST_DELETE_FILE,requestData,{isLoading:true}).then((res)=>{
 					if(res.error==0){
 						resolve(res);
+						Message({
+							type:'success',
+							message:"删除成功"
+						});	
 					}else{
 						Message({
 							type:'error',

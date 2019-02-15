@@ -26,50 +26,81 @@
                     </el-input>
                 </el-col>
                 <el-col :span='2' align='center'>
-                    <el-upload
+                    <!-- <el-upload
                     class="upload-demo"
                     action="/API/common/upload"
                     multiple
+                    :show-file-list="true"
+                    :on-success="handleAvatarSuccess"
                     :limit="3"
-                    :on-success="handleAvatarSuccess">
+                    drag
+                    :before-upload="beforeAvatarUpload">
                         <el-button type='text' class="el-icon-upload2"></el-button>
-                    </el-upload>
+                    </el-upload> -->
                 </el-col>
             </el-row>
-            <div 
-            class="folder-box" 
-            @contextmenu="menuContainer"
-            @click="comEvent">
+
+            <!-- <el-upload
+            class="upload-demo"
+            action="/API/common/upload"
+            multiple
+            :show-file-list="true"
+            :on-success="handleAvatarSuccess"
+            :limit="3"
+            :before-upload="beforeAvatarUpload">
+                <i class="el-icon-upload"></i>
+                <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+            </el-upload> -->
+
+            <!-- <el-upload
+            drag
+            action="/API/common/upload"
+            multiple>
+                <div>1123</div>
+            </el-upload> -->
+
+
                 <div 
-                v-for="(item,index,key) in this.resouceData.commonPrefixes"
-                :key="key"
-                class="folder"
-                :class="selectFolderIdx==index? 'active':''"
-                @dblclick="openFolder(item)"
-                @contextmenu.prevent.stop="showRightMenu(item,index)"
-                @click.stop="onSelectedFolder(index)">
-                    <img 
-                    src="@/assets/img/folder.png" 
-                    alt="" 
-                    class="folderImg"/>
-                    <span class="fileName">{{handleFolder(item)}}</span>
+                class="folder-box" 
+                @contextmenu="menuContainer"
+                @click="comEvent">
+
+
+                    
+
+
+                        <div 
+                        v-for="(item,index,key) in this.resouceData.commonPrefixes"
+                        :key="key"
+                        class="folder"
+                        :class="selectFolderIdx==index? 'active':''"
+                        @dblclick="openFolder(item)"
+                        @contextmenu.prevent.stop="showRightMenu(item,index)"
+                        @click.stop="onSelectedFolder(index)">
+                            <img 
+                            src="@/assets/img/folder.png" 
+                            alt="" 
+                            class="folderImg"/>
+                            <span class="fileName">{{handleFolder(item)}}</span>
+                        </div>
+                        <div 
+                        v-for="(item,index) in this.resouceData.items"
+                        :key="index"
+                        class="folder"
+                        :class="selectFileIdx==index? 'active':''"
+                        @contextmenu.prevent.stop="showRightMenu(item,index)"
+                        @click.stop="onSelectedFile(index)">
+                            <img 
+                            :src="getIconSrc(item)" 
+                            alt="" 
+                            class="folderImg"/>
+                            <span class="fileName">
+                                {{handleFile(item.key)}}
+                            </span>
+                        </div>
+                    
                 </div>
-                <div 
-                v-for="(item,index) in this.resouceData.items"
-                :key="index"
-                class="folder"
-                :class="selectFileIdx==index? 'active':''"
-                @contextmenu.prevent.stop="showRightMenu(item,index)"
-                @click.stop="onSelectedFile(index)">
-                    <img 
-                    :src="getIconSrc(item)" 
-                    alt="" 
-                    class="folderImg"/>
-                    <span class="fileName">
-                        {{handleFile(item.key)}}
-                    </span>
-                </div>
-            </div>
+            
 
 
             <ul 
@@ -163,7 +194,7 @@
                         <li @click="createFold">文件夹</li>
                     </ul>
                 </li>
-                <li @click="pasteFile">
+                <li @click="pasteFile(0)">
                     <i></i>
                     <span>粘贴</span>
                     <i></i>
@@ -244,22 +275,46 @@
         <el-dialog
         :visible.sync="visibleCopyExists"
         :modal-append-to-body="false"
+        align="center"
         width='20%'>
-            <el-row style="marginBottom:20px;text-align:center;">{{copyExistsFile.message}}</el-row>
-            <!-- <el-button type="success" @click="deleteFileFolder">确定</el-button> -->
-            <el-form 
-            :model="copyFileParams"
-            label-width="100px">
-                <el-form-item 
-                label="是否强制替换">
-                    <el-radio-group v-model="copyFileParams.isForce">
-                        <el-radio :label="0">否</el-radio>
-                        <el-radio :label="1">是</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-            </el-form>
-            <el-button type="success" @click="pasteFile">确定</el-button>
+            <el-row style="marginBottom:20px;text-align:center;">{{copyExistsFile.message}}是否强制替换</el-row>
+            <el-button type="success" @click="pasteFile(1)">替换</el-button>
+            <el-button type="success" @click="replaceClose">不替换</el-button>
         </el-dialog>
+
+        <!-- <el-dialog
+        :visible.sync="visibleCreateFile"
+        :modal-append-to-body="false"
+        width='30%'>
+
+        <el-form 
+            :model="renameFileParams" 
+            :rules="renameFileRules" 
+            ref="renameFile" 
+            label-width="100px">
+                <div v-for="(item,index) in fileLists" :key="index" style="marginBottom: 50px;">
+                    
+                    <el-form-item 
+                    label="上传文件" 
+                    prop="name">
+                        <span>{{item.name}}</span>
+                    </el-form-item>
+                    <el-form-item 
+                    label="重命名文件" 
+                    prop="name">
+                        <el-input 
+                        v-model="item.name" 
+                        @keyup.enter.native="submitForm"></el-input>
+                    </el-form-item>
+                </div>
+                
+
+                <el-button type="success" @click="submitRenameForm('renameFile')">确定</el-button>
+                <el-button type="success" @click="resetRenameForm('renameFile')">重置</el-button>
+            </el-form>
+            
+            
+        </el-dialog> -->
 
 
 
@@ -268,6 +323,7 @@
 
 <script>
     import moment from 'moment';
+    import {Message} from 'element-ui';
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
         ".html":require("@/assets/img/html_icon.png"),
@@ -290,7 +346,9 @@
                     newType:""
                 },
                 deleteFileParams:{
-                    files:[{name:''}]
+                    files:[{
+                        name:''
+                    }]
                 },
                 delFileName:'',
                 deleteFolderParams:{
@@ -305,7 +363,7 @@
                 rules:{
                         folderNane: [
                             { required: true, message: '请输入文件夹名', trigger: 'blur' },
-                            { pattern: /^((?!\/|^\s+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件夹名称不能包含开头空格及/ | \\ * + : ? " < >字符' }
+                            { pattern: /^((?!\/|\s+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件夹名称不能包含空格及/ | \\ * + : ? " < >字符' }
                         ]
                 },
                 renameFileParams:{
@@ -317,13 +375,13 @@
                 renameFileRules:{
                     renameDestKey: [
                         { required: true, message: '请输入文件夹名', trigger: 'blur' },
-                        { pattern: /^((?!\/|^\s+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件名称不能包含开头空格及/ | \\ * + : ? " < >字符' }
+                        { pattern: /^((?!\/|\s+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件名称不能包含空格及/ | \\ * + : ? " < >字符' }
                     ]
                 },
                 copyFileParams:{
                     srcKey:'',
                     destKey:'',
-                    isForce:0
+                    isForce:''
                 },
                 resouceData:'',
                 visibleDetList:false,
@@ -335,6 +393,7 @@
                 visibleCreate:false,
                 visibleOkCancel:false,
                 visibleCopyExists:false,
+                // visibleCreateFile:false,
                 left:"",
                 top:"",
                 history:[],
@@ -344,14 +403,52 @@
                 selectFolderIdx:null,
                 selectFileIdx:null,
                 copySrcKey:'',
-                copyExistsFile:''
-                
+                copyExistsFile:'',
+                createFileData:{
+                    files:[{
+                        name:"",
+                        key:"",
+                        force:""
+                    }]
+                },
+                fileLists:[],
                 
             }
         },
         created(){  
         },
         methods:{
+            handleAvatarSuccess(response,file,fileList){
+                console.log("response",response)
+
+                
+                console.log("file",file)
+
+
+                console.log("fileList",fileList)
+                // this.visibleCreateFile = true;
+                this.fileLists = fileList
+
+
+                this.createFileData.files.map((item,index)=>{
+                    item.name = response;
+                    item.key = file.name;
+                })
+                
+                console.log("this.createFileData",this.createFileData)
+
+            },
+
+            createFile(){
+               this.$store.dispatch("POST_CREATE_FILE",this.createFileData).then((res)=>{
+                   this.getData();
+               })
+            },
+
+            beforeAvatarUpload(){
+                console.log("123")
+            },
+            
             refresh(){
                 window.location.reload();
             },
@@ -369,7 +466,7 @@
                 let index = val.lastIndexOf('/');
                 let len = val.length
                 let fileName = val.substring(index+1, len)
-                return fileName.replace(/\s+/g,"");
+                return fileName;
             },
             //单击选中
             onSelectedFolder(index){
@@ -399,7 +496,7 @@
             },
             pathChange(){
                 localStorage.folderPath = this.requestParams.prefix
-                console.log("123")
+               
             },
             menuContainer(){
                 // console.log("11111")
@@ -421,7 +518,7 @@
                     this.renameFileParams.srcKey = item.key;
 
                     this.delFileName = item.key;
-
+                    
                     this.deleteFileParams.files.map((itm,index)=>{
                         itm.name = item.key;
                     })
@@ -513,7 +610,7 @@
             createFolder(){
                 let folderDirctory = `${localStorage.folderPath? localStorage.folderPath:''}
                     ${this.newFolderName.folderNane}/`;
-                this.createFolderParams.folder_name = folderDirctory;
+                this.createFolderParams.folder_name = folderDirctory.replace(/\s*/g,'');
                 this.$store.dispatch("POST_CREATE_FOLDER",this.createFolderParams).then((res)=>{
                     this.visibleCreate = false;
                     this.getData();
@@ -537,44 +634,47 @@
                 
             },
 
-            pasteFile(){
+            pasteFile(val){
                 this.visibleMenuList = false;
-                // this.visibleCopyExists = false;
-                this.copyFileParams.srcKey = localStorage.copySrcKey;
 
-
-                console.log("localStorage.copySrcKey",localStorage.copySrcKey)
+                this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
 
                 let copyDestKeyFile = this.handleFile(localStorage.copySrcKey);
-
-                console.log("handleFile",this.handleFile(localStorage.copySrcKey))
-
-                // console.log("copyDestKeyFile",copyDestKeyFile);
 
                 let copyDestKey = `${localStorage.folderPath?localStorage.folderPath:''}
                     ${copyDestKeyFile}`;
 
-                this.copyFileParams.destKey = copyDestKey;
+                this.copyFileParams.destKey = copyDestKey.replace(/\s*/g,'');
 
-
-                // this.copyFileParams.destKey = localStorage.copySrcKey;
-
-                
-
-
-                this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then((res)=>{
-                    this.visibleMenuList = false;
-                    if(res.error = 614){
-                        console.log("123456789")
-                        this.visibleCopyExists = true;
-                        this.copyExistsFile = res;
-                    }
-                    this.getData();
-                })
+                if(val == 0){
+                    this.copyFileParams.isForce = val;
+                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then((res)=>{
+                        this.visibleMenuList = false;
+                        if(res.error == 614){
+                            console.log("123456789")
+                            this.copyExistsFile = res;
+                            this.visibleCopyExists = true;
+                        }
+                        this.getData();
+                    })
+                }else if( val == 1){
+                    this.copyFileParams.isForce = val;
+                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then((res)=>{
+                        this.visibleMenuList = false;
+                        this.visibleCopyExists = false;
+                        this.copyFileParams.isForce = 0;
+                        this.getData();
+                        Message({
+							type:'success',
+							message:"替换成功"
+						});
+                    })
+                }
             },
 
-            
-
+            replaceClose(){
+                this.visibleCopyExists = false;
+            },
 
             //删除文件&&文件夹
             OkCancel(){
@@ -643,10 +743,6 @@
                     document.onmousemove = null;
                 };
             },
-            handleAvatarSuccess(res, file) {
-                console.log('res',res,'file',file)
-                this.imageUrl = URL.createObjectURL(file.raw);
-            },  
 
         },
         mounted(){
@@ -666,7 +762,7 @@
             height: 300px;
             margin: 30px 0 0 200px; 
             flex-wrap: wrap;
-            // background-color: #fff;
+            background-color: #fff;
             .folder{
                 display: flex;
                 height: 85px;
@@ -701,6 +797,9 @@
                 background-color: #fff;
                 border: 1px solid #ccc;
                 // text-align: center;
+                li:hover{
+                    background-color: #ccc;
+                }
                 li{
                     display: flex;
                     justify-content: space-between;
@@ -733,14 +832,14 @@
                     position: relative;
                     .newsContent{
                         background-color: #fff;
-                        
                         border: 1px solid #ccc;
                         position: absolute;
                         top: -1px;
                         right: -142px;
-                        li{
+                        >li{
                             display: flex;
                             justify-content: space-around;
+                            height: 39px;
                         }
                     }
 
@@ -780,3 +879,5 @@
     }
     
 </style>
+
+
