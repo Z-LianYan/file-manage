@@ -1,20 +1,21 @@
 
 import Vue from 'vue'
 import moment from 'moment';
+import Humanize from 'humanize-plus';
 // import currency from 'currency.js';
 
-Vue.filter("formatDate",function(timestamp,geshi){
-	var d = moment(parseInt(timestamp)*1000).format(geshi?geshi:"YYYY-MM-DD HH:mm:ss");
-	if(d=='Invalid date'){
-		return timestamp;
-	}else{
-		return d;
-	}
+Vue.filter("formatDate",function(timestamp){
+	var tt = new String(timestamp)
+	var d = moment(parseInt(tt.substr(0,tt.length-7))*1000).format("YYYY年MM月DD日 HH:mm:ss");
+	return d;
 });
 
-// Vue.filter("formatMoney",function(money){
-// 	return currency(money).format();
-// });
+//可视化文件大小
+Vue.filter("fileSize",(val)=>{
+	if(val){
+		return Humanize.fileSize(1024 * val)
+	}
+});
 
 Vue.filter("changeTime",function(timestamp,geshi){
 	var d = moment(parseInt(timestamp)*1000).format(geshi?geshi:"YYYY-MM-DD ");
@@ -61,5 +62,6 @@ Vue.filter("roundNumber",function(val){
 		return Number(val).toFixed(2)
 	}
 });
+
 
 

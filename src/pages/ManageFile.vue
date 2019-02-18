@@ -29,7 +29,6 @@
                 </el-col>
             </el-row>
 
-
             <div 
             class="folder-box" 
             @contextmenu="menuContainer"
@@ -64,8 +63,6 @@
                     </span>
                 </div>
             </div>
-            
-
 
             <ul 
                 class='contextmenu' 
@@ -101,7 +98,6 @@
                     <span>删除</span>
                     <i></i>
                 </li>
-                
                 <li @click="onProperty()" v-show="visibleCommon">
                     <i></i>
                     <span>属性</span>
@@ -109,66 +105,22 @@
                 </li>
             </ul>
 
-            <ul 
-            id="attribute-box" 
-            v-show="propertyShow"
-            :style="{left:left+'px',top:top+'px'}">
-                <li 
-                class="closeBtn"
-                @mousedown="drag">
-                    <span >{{handleFile(attribute)}}属性</span>
-                    <i @click="closeBtn()" class="fa fa-close"></i>
-                </li>
-                <li class="formItem">
-                    <el-form>
-                        <el-form-item 
-                            label="类型">
-                            <span class="comlabel">
-                                {{propertyData.mimeType}}
-                            </span>
-                        </el-form-item>
-                        <el-form-item 
-                            label="大小">
-                            <span class="comlabel">
-                                {{propertyData.fsize|fileSize}}
-                            </span>
-                        </el-form-item>
-                        <el-form-item 
-                            label="上传时间">
-                            <span class="comlabel">
-                                {{propertyData.putTime|formatDate}}
-                            </span>
-                        </el-form-item>
-                    </el-form>
-                </li>
-            </ul>
+            <FileAttribute 
+            v-show='propertyShow' 
+            :attributeTitle='attribute' 
+            :propertyData='propertyData' 
+            @onClose="closeBtn" 
+            :onDrag='drag'
+            :left='left'
+            :top='top'/>
 
-            <ul
-            class='contextmenu' 
-            v-show="visibleMenuList"
-            :style="{left:left+'px',top:top+'px'}">
-                <li 
-                class="news"
-                @mouseover="overNews()" 
-                @mouseout="outNews()">
-                    <i class="el-icon-plus"></i>
-                    <span>新建</span>
-                    <i class="fa fa-angle-right"></i>
-                    <ul class="newsContent" v-show="visibleNews">
-                        <li @click="createFold">文件夹</li>
-                    </ul>
-                </li>
-                <li @click="pasteFile(0)">
-                    <i></i>
-                    <span>粘贴</span>
-                    <i></i>
-                </li>
-                <li @click="refresh">
-                    <i></i>
-                    <span>刷新</span>
-                    <i></i>
-                </li>
-            </ul>
+            <NewContainerMenu 
+            :left='left' 
+            :top='top'
+            v-show='visibleMenuList' 
+            @onCreateFold='createFold'
+            :OnPasteFile='pasteFile'/>
+
         </el-card>
 
         <el-dialog
@@ -235,7 +187,6 @@
             <el-button type="success" @click="cancel">取消</el-button>
         </el-dialog>
         
-
         <el-dialog
         :visible.sync="visibleCopyExists"
         :modal-append-to-body="false"
@@ -246,13 +197,14 @@
             <el-button type="success" @click="replaceClose">不替换</el-button>
         </el-dialog>
 
-
-
     </div>
 </template>
 
 <script>
     import {Message} from 'element-ui';
+    import FileAttribute from '@/components/FileAttribute';
+    import NewContainerMenu from '@/components/NewContainerMenu';
+
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
         ".html":require("@/assets/img/html_icon.png"),
@@ -322,7 +274,6 @@
                 visibleCreate:false,
                 visibleOkCancel:false,
                 visibleCopyExists:false,
-                // visibleCreateFile:false,
                 left:"",
                 top:"",
                 history:[],
@@ -346,26 +297,21 @@
         },
         created(){  
         },
+        components:{
+            FileAttribute,
+            NewContainerMenu
+        },
         methods:{
             handleAvatarSuccess(response,file,fileList){
                 console.log("response",response)
-
-                
                 console.log("file",file)
-
-
                 console.log("fileList",fileList)
-                // this.visibleCreateFile = true;
                 this.fileLists = fileList
-
-
                 this.createFileData.files.map((item,index)=>{
                     item.name = response;
                     item.key = file.name;
                 })
-                
                 console.log("this.createFileData",this.createFileData)
-
             },
 
             createFile(){
@@ -373,14 +319,7 @@
                    this.getData();
                })
             },
-
-            beforeAvatarUpload(){
-                console.log("123")
-            },
             
-            refresh(){
-                window.location.reload();
-            },
             getIconSrc(item){
                 var extname = this.getExtName(item.key);
                 return extnameMap[extname]?extnameMap[extname]:unknow_icon;
@@ -393,15 +332,15 @@
             },
             handleFile(val){
                 let index = val.lastIndexOf('/');
-                let len = val.length
-                let fileName = val.substring(index+1, len)
+                let len = val.length;
+                let fileName = val.substring(index+1, len);
                 return fileName;
             },
             //单击选中
             onSelectedFolder(index){
                 this.visibleDetList = false;
                 this.visibleMenuList = false;
-                this.selectFileIdx = null
+                this.selectFileIdx = null;
                 this.selectFolderIdx = index;
             },
             onSelectedFile(index){
@@ -414,7 +353,7 @@
                 this.visibleDetList = false;
                 this.visibleMenuList = false;
                 this.selectFolderIdx = null;
-                this.selectFileIdx = null
+                this.selectFileIdx = null;
             },
             //获取目录下文件
             getData(){
@@ -427,15 +366,15 @@
                 localStorage.folderPath = this.requestParams.prefix
                
             },
+
             menuContainer(){
-                // console.log("11111")
                 this.visibleMenuList = true;
                 this.visibleDetList = false;
                 this.left = event.clientX;
                 this.top = event.clientY;
             },
+
             showRightMenu(item,index){
-                console.log("item",item)
                 this.visibleMenuList = false;
                 this.visibleCommon = true;
                 let itmStr = new String(item)
@@ -454,7 +393,6 @@
 
                     this.copySrcKey = item.key
 
-
                 }else if(itmStr instanceof String){
                     this.visibleCommon = false;
                     this.deleteFolderParams.folder_name = item;
@@ -466,7 +404,6 @@
                 this.top = event.clientY;
             },
             openFolder(val){
-                console.log("abc",val)
                 this.history.push(val);
                 localStorage.setItem('folderPath',val)
                 console.log('folderPath',localStorage.folderPath)
@@ -492,9 +429,10 @@
                 let len = this.history.length-1;
                 this.requestParams.prefix = this.history[len];
                 localStorage.folderPath = this.history[len];
-                console.log("666",this.requestParams.prefix);
                 this.getData();
             },
+
+
             //获取文件详情
             onProperty(){
                 this.visibleDetList = false;
@@ -504,9 +442,10 @@
                     this.propertyData = res.data;
                 })
             },
-            closeBtn(){
-                this.propertyShow = false;
-                this.visibleDetList = false;
+
+            closeBtn(data){
+                this.propertyShow = data.propertyShow;
+                // this.visibleDetList = false;
             },
             //更改存储类型
             changeSaveTpye(){
@@ -526,17 +465,14 @@
                     this.getData();
                 }) 
             },
-            overNews(){
-                this.visibleNews = true;
+
+            createFold(data){
+                console.log("55");
+                this.visibleCreate = data.visibleCreate; 
+                this.visibleMenuList = data.visibleMenuList;
             },
-            outNews(){
-                this.visibleNews = false;
-            },
-            //创建文件夹
-            createFold(){
-                this.visibleCreate = true; 
-                this.visibleMenuList = false;
-            },
+
+
             createFolder(){
                 let folderDirctory = `${localStorage.folderPath? localStorage.folderPath:''}
                     ${this.newFolderName.folderNane}/`;
@@ -546,6 +482,8 @@
                     this.getData();
                 })
             },
+
+
             submitForm(formName) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
@@ -565,17 +503,11 @@
             },
 
             pasteFile(val){
-                this.visibleMenuList = false;
-
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
-
                 let copyDestKeyFile = this.handleFile(localStorage.copySrcKey);
-
                 let copyDestKey = `${localStorage.folderPath?localStorage.folderPath:''}
                     ${copyDestKeyFile}`;
-
                 this.copyFileParams.destKey = copyDestKey.replace(/\s*/g,'');
-
                 if(val == 0){
                     this.copyFileParams.isForce = val;
                     this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then((res)=>{
@@ -610,7 +542,6 @@
 
             //删除文件&&文件夹
             OkCancel(){
-                console.log("22")
                 this.visibleOkCancel = true;
                 this.visibleDetList = false;
             },
@@ -660,6 +591,7 @@
                 this.$refs[formName].resetFields();
             },
             drag(e){
+                console.log("1123")
                 e.preventDefault();
                 var target = document.getElementById('attribute-box');
                 let disX = e.clientX - target.offsetLeft;
@@ -776,52 +708,8 @@
 
                 }
             }
-            #attribute-box{
-                width: 280px;
-                background-color: #fff;
-                border:1px solid #ccc;
-                position:fixed;
-                left:0;
-                top:0;
-                padding: 10px;
-                border-radius: 8px;
-                :nth-child(1){
-                    
-                }
-                .closeBtn{
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    width: 100%;
-                    background-color:#e0e0e0;
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    border-top-left-radius: 8px;
-                    border-top-right-radius: 8px;
-                    padding: 5px;
-                }
-                .formItem{
-                    margin-top: 15px;
-                }
-                .comlabel{
-                    color: #8B8B7A;
-                }
-            }
         }
     }
-    .el-dialog {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        margin: 0 !important;
-        transform: translate(-50%, -50%);
-        max-height: calc(100% - 30px);
-        max-width: calc(100% - 30px);
-        display: flex;
-        flex-direction: column;
-    }
-    
 </style>
 
 

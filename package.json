@@ -15,6 +15,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "element-ui": "^2.5.3",
+    "humanize-plus": "^1.8.2",
     "moment": "^2.24.0",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1",
