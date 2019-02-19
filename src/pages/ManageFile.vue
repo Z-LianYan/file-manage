@@ -1,33 +1,13 @@
 <template>
     <div class="manage_container">
         <el-card class="card-box">
-            <el-row>
-                <el-col :span="1">
-                    <el-button 
-                        type="text" 
-                        icon="el-icon-arrow-left"
-                        @click="goback(requestParams.prefix)">
-                    </el-button>
-                </el-col>
-                <el-col 
-                :span="1" 
-                style="text-align:center">
-                    <el-button 
-                        type="text" 
-                        icon="el-icon-arrow-right"
-                        @click="advance()">
-                    </el-button>
-                </el-col>
-                <el-col :span="20">
-                    <el-input 
-                        v-model="requestParams.prefix"
-                        @keyup.enter.native="getData()"
-                        @input ='pathChange'>
-                    </el-input>
-                </el-col>
-                <el-col :span='2' align='center'>
-                </el-col>
-            </el-row>
+
+            <HeaderCom
+            :requestParams='requestParams'
+            :onGoback='goback'
+            :onPathChange='pathChange'
+            :onAdvance='advance'
+            :onGetDAata='getData'/>
 
             <div 
             class="folder-box" 
@@ -51,7 +31,7 @@
                 v-for="(item,index) in this.resouceData.items"
                 :key="index"
                 class="folder"
-                :class="selectFileIdx==index? 'active':''"
+                :class="selectFileIdx == index? 'active':''"
                 @contextmenu.prevent.stop="showRightMenu(item,index)"
                 @click.stop="onSelectedFile(index)">
                     <img 
@@ -64,46 +44,17 @@
                 </div>
             </div>
 
-            <ul 
-                class='contextmenu' 
-                v-show="visibleDetList" 
-                :style="{left:left+'px',top:top+'px'}">
-                <li 
-                @mouseover="changeSaveTpye()" 
-                @mouseout="outSaveType()" 
-                class="change-save"
-                v-show="visibleCommon">
-                    <i></i>
-                    <span>更改存储类型</span>
-                    <i class="fa fa-angle-right"></i>
-                    <div v-show="saveType" class="change-save-type">
-                        <el-radio-group v-model="changeSaveParams.newType" @change="saveChange">
-                            <el-radio :label="0">普通存储</el-radio>
-                            <el-radio :label="1">低频存储</el-radio> 
-                        </el-radio-group>
-                    </div>
-                </li>
-                <li @click="copyFile" v-show="visibleCommon">
-                    <i></i>
-                    <span>复制</span>
-                    <i></i>
-                </li>
-                <li @click="renameFile" v-show="visibleCommon">
-                    <i></i>
-                    <span>重命名</span>
-                    <i></i>
-                </li>
-                <li @click="OkCancel">
-                    <i class="fa fa-trash-o"></i>
-                    <span>删除</span>
-                    <i></i>
-                </li>
-                <li @click="onProperty()" v-show="visibleCommon">
-                    <i></i>
-                    <span>属性</span>
-                    <i></i>
-                </li>
-            </ul>
+            <FileFolderMenu
+            :left='left'
+            :top='top'
+            :changeSaveParams='changeSaveParams'
+            v-show="visibleDetList"
+            :visibleCommon='visibleCommon'
+            :onRenameFile='renameFile'
+            :onSaveChange='saveChange'
+            :onCopyFile='copyFile'
+            :onDelete="OkCancel"
+            :onShowAttribute='showAttribute'/>
 
             <FileAttribute 
             v-show='propertyShow' 
@@ -204,6 +155,8 @@
     import {Message} from 'element-ui';
     import FileAttribute from '@/components/FileAttribute';
     import NewContainerMenu from '@/components/NewContainerMenu';
+    import FileFolderMenu from '@/components/FileFolderMenu';
+    import HeaderCom from '@/components/HeaderCom';
 
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
@@ -278,7 +231,6 @@
                 top:"",
                 history:[],
                 propertyData:{},
-                saveType:false,
                 attribute:'',
                 selectFolderIdx:null,
                 selectFileIdx:null,
@@ -292,34 +244,22 @@
                     }]
                 },
                 fileLists:[],
-                
             }
         },
         created(){  
         },
         components:{
             FileAttribute,
-            NewContainerMenu
+            NewContainerMenu,
+            FileFolderMenu,
+            HeaderCom
         },
         methods:{
-            handleAvatarSuccess(response,file,fileList){
-                console.log("response",response)
-                console.log("file",file)
-                console.log("fileList",fileList)
-                this.fileLists = fileList
-                this.createFileData.files.map((item,index)=>{
-                    item.name = response;
-                    item.key = file.name;
-                })
-                console.log("this.createFileData",this.createFileData)
-            },
-
             createFile(){
                this.$store.dispatch("POST_CREATE_FILE",this.createFileData).then((res)=>{
                    this.getData();
                })
             },
-            
             getIconSrc(item){
                 var extname = this.getExtName(item.key);
                 return extnameMap[extname]?extnameMap[extname]:unknow_icon;
@@ -366,34 +306,32 @@
                 localStorage.folderPath = this.requestParams.prefix
                
             },
-
             menuContainer(){
                 this.visibleMenuList = true;
                 this.visibleDetList = false;
                 this.left = event.clientX;
                 this.top = event.clientY;
             },
-
             showRightMenu(item,index){
                 this.visibleMenuList = false;
                 this.visibleCommon = true;
-                let itmStr = new String(item)
+                let itmStr = new String(item);
                 if(item instanceof Object){
+                    this.selectFileIdx = index;
+                    this.selectFolderIdx = null;
                     this.propertyParams.filename = item.key;
                     this.changeSaveParams.filename = item.key;
                     this.changeSaveParams.newType = item.type;
                     this.attribute = item.key;
                     this.renameFileParams.srcKey = item.key;
-
                     this.delFileName = item.key;
-                    
                     this.deleteFileParams.files.map((itm,index)=>{
                         itm.name = item.key;
                     })
-
                     this.copySrcKey = item.key
-
                 }else if(itmStr instanceof String){
+                    this.selectFolderIdx = index;
+                    this.selectFileIdx = null;
                     this.visibleCommon = false;
                     this.deleteFolderParams.folder_name = item;
                     this.folderDir = item;
@@ -406,8 +344,6 @@
             openFolder(val){
                 this.history.push(val);
                 localStorage.setItem('folderPath',val)
-                console.log('folderPath',localStorage.folderPath)
-                console.log("efg",this.history);
                 this.requestParams.prefix = val;
                 this.getData();
             },
@@ -431,59 +367,42 @@
                 localStorage.folderPath = this.history[len];
                 this.getData();
             },
-
-
             //获取文件详情
-            onProperty(){
+            showAttribute(){
                 this.visibleDetList = false;
                 this.propertyShow = true;
-                this.$store.dispatch("POST_RESOURCE_DETAIL",this.propertyParams).then((res)=>{
+                this.$store.dispatch("POST_RESOURCE_DETAIL",this.propertyParams).then( res =>{
                     console.log("resProperty",res);
                     this.propertyData = res.data;
                 })
             },
-
             closeBtn(data){
                 this.propertyShow = data.propertyShow;
                 // this.visibleDetList = false;
             },
-            //更改存储类型
-            changeSaveTpye(){
-                this.saveType = true;
-            },
-            outSaveType(){
-                this.saveType = false;
-            },
-            
             closeDialog(){
                 this.saveType = false;
             },
             saveChange(){
-                this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then((res)=>{
+                this.visibleDetList = false;
+                this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then( res =>{
                     this.closeDialog();
-                    this.visibleDetList = false;
                     this.getData();
                 }) 
             },
-
             createFold(data){
-                console.log("55");
                 this.visibleCreate = data.visibleCreate; 
                 this.visibleMenuList = data.visibleMenuList;
             },
-
-
             createFolder(){
                 let folderDirctory = `${localStorage.folderPath? localStorage.folderPath:''}
                     ${this.newFolderName.folderNane}/`;
                 this.createFolderParams.folder_name = folderDirctory.replace(/\s*/g,'');
-                this.$store.dispatch("POST_CREATE_FOLDER",this.createFolderParams).then((res)=>{
+                this.$store.dispatch("POST_CREATE_FOLDER",this.createFolderParams).then( res =>{
                     this.visibleCreate = false;
                     this.getData();
                 })
             },
-
-
             submitForm(formName) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
@@ -501,7 +420,6 @@
                 localStorage.setItem("copySrcKey",this.copySrcKey)
                 
             },
-
             pasteFile(val){
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
                 let copyDestKeyFile = this.handleFile(localStorage.copySrcKey);
@@ -510,7 +428,7 @@
                 this.copyFileParams.destKey = copyDestKey.replace(/\s*/g,'');
                 if(val == 0){
                     this.copyFileParams.isForce = val;
-                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then((res)=>{
+                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
                         this.visibleMenuList = false;
                         if(res.error == 614){
                             console.log("123456789")
@@ -521,7 +439,7 @@
                     })
                 }else if( val == 1){
                     this.copyFileParams.isForce = val;
-                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then((res)=>{
+                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
                         this.visibleMenuList = false;
                         this.visibleCopyExists = false;
                         this.copyFileParams.isForce = 0;
@@ -539,7 +457,6 @@
             },
 
 
-
             //删除文件&&文件夹
             OkCancel(){
                 this.visibleOkCancel = true;
@@ -551,13 +468,13 @@
             deleteFileFolder(){
                 if(this.visibleCommon){
                     console.log("11121322")
-                    this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then((res)=>{
+                    this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then( res =>{
                         this.visibleOkCancel = false;
                         this.getData();
                     })
                 }else{
                     console.log("55")
-                    this.$store.dispatch("POST_DELETE_FOLDER",this.deleteFolderParams).then((res)=>{
+                    this.$store.dispatch("POST_DELETE_FOLDER",this.deleteFolderParams).then( res =>{
                         this.visibleOkCancel = false;
                         this.getData();
                     })
@@ -572,7 +489,7 @@
             renameFileSend(){
                 let renameFileName = `${localStorage.folderPath? localStorage.folderPath:''}${this.renameFileParams.renameDestKey}`
                 this.renameFileParams.destKey = renameFileName
-                this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then((res)=>{
+                this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res =>{
                     this.visibleRename = false;
                     this.getData();
                 })
@@ -612,40 +529,14 @@
         mounted(){
             this.getData();
             window.oncontextmenu = ()=>{
-                event.preventDefault()
+                event.preventDefault();
             }
         },
     }
 </script>
 
-<style lang="scss">
+<style lang="scss" scope>
     .manage_container{
-        .folder-box{
-            display: flex;
-            height: 300px;
-            margin: 30px 0 0 200px; 
-            flex-wrap: wrap;
-            // background-color: #fff;
-            .folder{
-                display: flex;
-                height: 85px;
-                flex-flow: column;
-                align-items: center;
-                margin-right: 10px;
-                padding: 5px;
-                align-items: center;
-                .folderImg{
-                    width: 60px;
-                    height: 55px;
-                }
-                .fileName{
-                    text-align: center;
-                }
-                &.active{
-                    background-color: #ccc;
-                }
-            }
-        }
         .card-box{
             position: fixed;
             top: 0;
@@ -655,11 +546,40 @@
             margin:10px;
             width:auto;
             background-color: #ebebeb;
+            .folder-box{
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: 100px 0 0 100px;
+                // border: 1px dashed red;
+                // background-color: #fff;
+                .folder{
+                    float: left;
+                    display: flex;
+                    height: 85px;
+                    flex-flow: column;
+                    align-items: center;
+                    margin-right: 10px;
+                    padding: 5px;
+                    align-items: center;
+                    .folderImg{
+                        width: 60px;
+                        height: 55px;
+                    }
+                    .fileName{
+                        text-align: center;
+                    }
+                    &.active{
+                        background-color: #ccc;
+                    }
+                }
+            }
             .contextmenu{
                 position: fixed;
                 background-color: #fff;
                 border: 1px solid #ccc;
-                // text-align: center;
                 li:hover{
                     background-color: #ccc;
                 }
@@ -669,12 +589,10 @@
                     align-items: center;
                     min-width: 140px;
                     padding: 10px;
-                    // text-align: center;
                     border-bottom: 1px solid #ccc;
                     i{
                         width: 10px;
                     }
-                    
                 }
                 li:nth-last-child(1){
                     border-bottom: 1px solid transparent;
@@ -711,5 +629,3 @@
         }
     }
 </style>
-
-
