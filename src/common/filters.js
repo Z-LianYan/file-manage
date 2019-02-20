@@ -17,6 +17,26 @@ Vue.filter("fileSize",(val)=>{
 	}
 });
 
+//过滤文件名
+Vue.filter("fileName", val =>{
+	if(val){
+		let index = val.lastIndexOf('/');
+		let len = val.length;
+		let fileName = val.substring(index+1, len);
+		return fileName;
+	}
+})
+//过滤文件夹名
+Vue.filter("folderName", val =>{
+	if(val){
+		let dirName = val.split("/");
+		let len = dirName.length;
+		return dirName[len-2];
+	}
+})
+
+
+
 Vue.filter("changeTime",function(timestamp,geshi){
 	var d = moment(parseInt(timestamp)*1000).format(geshi?geshi:"YYYY-MM-DD ");
 	if(d=='Invalid date'){

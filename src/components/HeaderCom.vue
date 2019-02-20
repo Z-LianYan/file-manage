@@ -20,7 +20,7 @@
             <el-col :span="20">
                 <el-input 
                     v-model="requestParams.prefix"
-                    @keyup.enter.native="getData()"
+                    @keyup.enter.native="onGetDAata"
                     @input ='onPathChange'>
                 </el-input>
             </el-col>

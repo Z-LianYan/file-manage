@@ -6,7 +6,7 @@
             <li 
             class="closeBtn"
             @mousedown="onDrag">
-                <span >{{handleFile(attributeTitle)}}属性</span>
+                <span >{{attributeTitle|fileName}}属性</span>
                 <i @click="closeBtn()" class="fa fa-close"></i>
             </li>
             <li class="formItem">
@@ -42,18 +42,12 @@
             return{
             }
         },
-        props:['attributeTitle','propertyData','onDrag','left','top'],
+        props:['attributeTitle','propertyData','onDrag','left','top',],
         created(){  
         },
         mounted() {
         },
         methods:{
-            handleFile(val){
-                let index = val.lastIndexOf('/');
-                let len = val.length
-                let fileName = val.substring(index+1, len)
-                return fileName;
-            },
             closeBtn(){
                 let data = {
                     propertyShow:false
@@ -77,9 +71,9 @@
         top:0;
         padding: 10px;
         border-radius: 8px;
-        :nth-child(1){
+        // :nth-child(1){
             
-        }
+        // }
         .closeBtn{
             display: flex;
             justify-content: space-between;

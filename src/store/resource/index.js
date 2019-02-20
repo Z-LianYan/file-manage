@@ -45,7 +45,7 @@ const resouceFile	 = {
 					if(res.error==0){
 						resolve(res);
 					}else{
-							Message({
+						Message({
 							type:'error',
 							message:res.message
 						});	
@@ -95,14 +95,7 @@ const resouceFile	 = {
 		POST_RENAME_FILE({commit,state},requestData){
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_RENAME_FILE,requestData,{isLoading:true}).then((res)=>{
-					if(res.error==0){
-						resolve(res);
-					}else{
-						Message({
-							type:'error',
-							message:res.message
-						});	
-					}
+					resolve(res);
 				})	
 			});	
 	   	},
