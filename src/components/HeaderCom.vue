@@ -76,8 +76,12 @@
 
                 this.fileLists.files.map((itm,idx)=>{
                     itm.name = file.response,
-                    itm.key = file.name
+                    itm.key = `${localStorage.folderPath ? localStorage.folderPath:''}${file.name}`
                 })
+                console.log("localStorage.folderPath",localStorage.folderPath)
+                console.log("this.fileLists.files",this.fileLists.files)
+
+
                 this.$store.dispatch("POST_CREATE_FILE",this.fileLists).then( res => {
                     this.visibleOkCancel = false;
                     this.onGetDAata();

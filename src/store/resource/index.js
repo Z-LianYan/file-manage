@@ -88,14 +88,26 @@ const resouceFile	 = {
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_COPY_FILE,requestData,{isLoading:true}).then((res)=>{
 					resolve(res);
+					if(res.error == 0){
+						Message({
+							type:'success',
+							message:"成功复制"
+						});
+					}
 				})	
 			});	
 		},
-		//重命名文件
+		//更改文件名（或移动文件）
 		POST_RENAME_FILE({commit,state},requestData){
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_RENAME_FILE,requestData,{isLoading:true}).then((res)=>{
 					resolve(res);
+					if(res.error == 0){
+						Message({
+							type:'success',
+							message:"成功移动文件"
+						});
+					}
 				})	
 			});	
 	   	},

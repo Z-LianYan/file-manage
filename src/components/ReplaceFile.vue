@@ -2,7 +2,7 @@
     <div>
         <el-row 
         style="marginBottom:20px;text-align:center;">
-            {{this.folderNamekey|folderName}}目录中已存在文件{{this.fileNamekey|fileName}}是否强制替换
+            {{this.folderNamekey|folderName}}目录中已存在{{this.fileNamekey|fileName}}文件要强制替换
         </el-row>
         <el-button type="success" @click="replaceFile">替换</el-button>
         <el-button type="success" @click="onFileExists">不替换</el-button>

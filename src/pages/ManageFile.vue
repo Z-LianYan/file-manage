@@ -8,69 +8,54 @@
             :onPathChange='pathChange'
             :onAdvance='advance'
             :onGetDAata='getData'/>
-
+            
             <div 
             class="folder-box" 
             @contextmenu="menuContainer"
             @click="comEvent">
-                <!-- <div 
-                v-for="(item,index,key) in this.resouceData.commonPrefixes"
-                :key="key"
-                class="folder"
-                :class="selectFolderIdx==index? 'active':''"
-                @dblclick="openFolder(item)"
-                @contextmenu.prevent.stop="showRightMenu(item,index)"
-                @click.stop="onSelectedFolder(index)"
-                @mousedown.stop="onSelectedFolder(index)"
-                @mouseenter="dragEnterFiles(item)"> -->
+                <ul>
+                    <li 
+                    v-for="(item,index,key) in this.resouceData.commonPrefixes"
+                    :key="key"
+                    class="folder"
+                    :class="selectFolderIdx==index? 'active':''"
+                    @dblclick="openFolder(item)"
+                    @contextmenu.prevent.stop="showRightMenu(item,index)"
+                    @click.stop="onSelectedFolder(index)"
+                    @mousedown.stop="onSelectedFolder(index)"
+                    @dragenter="dragEnterFolder($event,item,index)"
+                    @dragover.prevent="handlerDragOver"
+                    @dragleave="dragLeaveFolder($event,item)">
+                        <img 
+                        src="@/assets/img/folder.png" 
+                        alt="" 
+                        class="folderImg"/>
+                        <span class="fileName">{{handleFolder(item)}}</span>
+                    </li>
+                </ul>
 
-                <div 
-                v-for="(item,index,key) in this.resouceData.commonPrefixes"
-                :key="key"
-                class="folder"
-                :class="selectFolderIdx==index? 'active':''"
-                @dblclick="openFolder(item)"
-                @contextmenu.prevent.stop="showRightMenu(item,index)"
-                @click.stop="onSelectedFolder(index)"
-                @mousedown.stop="onSelectedFolder(index)"
-                @drop="dropFile">
-                    <img 
-                    src="@/assets/img/folder.png" 
-                    alt="" 
-                    class="folderImg"/>
-                    <span class="fileName">{{handleFolder(item)}}</span>
-                </div>
-
-
-                <!-- <div 
-                v-for="(item,index) in this.resouceData.items"
-                :key="index"
-                class="folder"
-                :class="selectFileIdx == index? 'active':''"
-                @contextmenu.prevent.stop="showRightMenu(item,index)"
-                @mousedown.stop="moveFile(item,index)"
-                @click.stop="onSelectedFile(index)"> -->
-
-
-                <div 
-                v-for="(item,index) in this.resouceData.items"
-                :key="index"
-                class="folder"
-                draggable="true"
-                :class="selectFileIdx == index? 'active':''"
-                @contextmenu.prevent.stop="showRightMenu(item,index)"
-                @click.stop="onSelectedFile(index)"
-                @dragstart="dragFile"
-                >
-
-                    <img 
-                    :src="getIconSrc(item)" 
-                    alt="" 
-                    class="folderImg"/>
-                    <span class="fileName">
-                        {{item.key|fileName}}
-                    </span>
-                </div>
+                <ul ref="parent">
+                    <li 
+                    v-for="(item,index) in this.resouceData.items"
+                    :key="index"
+                    
+                    class="folder"
+                    draggable="true"
+                    :class="selectFileIdx == index? 'active':''"
+                    @contextmenu.prevent.stop="showRightMenu(item,index)"
+                    @click.stop="onSelectedFile(index)"
+                    @mousedown="fileDown(index)"
+                    @dragstart="dragStartFile($event,item,index)"
+                    @dragover="dragOverFile($event,item)">
+                        <img 
+                        :src="getIconSrc(item)" 
+                        alt="" 
+                        class="folderImg"/>
+                        <span class="fileName">
+                            {{item.key|fileName}}
+                        </span>
+                    </li>
+                </ul>
             </div>
 
             <FileFolderMenu
@@ -143,7 +128,7 @@
                     v-model="renameFileParams.renameDestKey" 
                     @keyup.enter.native="submitRenameForm('renameFile')"></el-input>
                 </el-form-item>
-                <el-form-item 
+                <!-- <el-form-item 
                 label="是否强制替换">
                     <el-radio-group v-model="renameFileParams.isForce">
                         <el-radio :label="0">否</el-radio>
@@ -153,10 +138,9 @@
                 <el-form-item>
                     <el-button type="success" @click="submitRenameForm('renameFile')">确定</el-button>
                     <el-button type="success" @click="resetRenameForm('renameFile')">重置</el-button>
-                </el-form-item>
+                </el-form-item> -->
             </el-form>
         </el-dialog>
-
 
         <el-dialog
         :visible.sync="visibleOkCancel"
@@ -168,8 +152,7 @@
             <el-button type="success" @click="cancel">取消</el-button>
         </el-dialog>
 
-
-        <!-- <el-dialog
+        <el-dialog
         :visible.sync="visibleFileExists"
         :modal-append-to-body="false"
         align="center"
@@ -180,7 +163,7 @@
             :onFileExists='fileExists'
             :fileNamekey='fileNamekey'
             :folderNamekey='folderNamekey'/>
-        </el-dialog> -->
+        </el-dialog>
         
         <el-dialog
         :visible.sync="visibleCopyExists"
@@ -201,7 +184,6 @@
     import NewContainerMenu from '@/components/NewContainerMenu';
     import FileFolderMenu from '@/components/FileFolderMenu';
     import HeaderCom from '@/components/HeaderCom';
-
     import ReplaceFile from '@/components/ReplaceFile';
 
     var extnameMap={
@@ -211,10 +193,13 @@
     };
     var folder_icon = require("@/assets/img/file_icon.png")
     var unknow_icon = require("@/assets/img/file_icon.png");
+
+
     export default {
         name:"stockDetail",
         data(){
             return{
+                folder_drop_map:{},
                 requestParams:{
                     prefix:localStorage.folderPath
                 },
@@ -280,6 +265,7 @@
                 visibleCopyExists:false,
                 selectedFileFolder:false,
                 visibleFileExists:false,
+                moveFileFolder:false,
                 left:"",
                 top:"",
                 history:[],
@@ -298,7 +284,11 @@
                 },
                 fileLists:[],
                 fileNamekey:'',
-                folderNamekey:''
+                folderNamekey:'',
+                moveDom:'',
+                changeDom:'',
+                startX:0,
+                endX:0,
             }
         },
         created(){  
@@ -311,6 +301,9 @@
             ReplaceFile
         },
         methods:{
+            handlerDragOver(){
+
+            },
             createFile(){
                this.$store.dispatch("POST_CREATE_FILE",this.createFileData).then((res)=>{
                    this.getData();
@@ -345,66 +338,74 @@
                 this.selectFolderIdx = null;
                 this.selectFileIdx = index;
             },
-            dragFile(evt){
-                // evt.dataTransfer.setData("Text",evt.target.id);
-                console.log("222",evt);
+            fileDown(index){
+                this.selectFolderIdx = null;
+                this.selectFileIdx = index;
             },
-            dropFile(){
-                console.log("666")
+            dragStartFile(evt,item,index){
+                var eo = evt || event;
+                this.moveDom = eo.currentTarget;
+                this.startX = eo.clientX;
+                this.startY = eo.clientY;
+                this.moveFiles.srcKey = item.key
+                let idx = item.key.lastIndexOf('/');
+                let len = item.key.length;
+                let fileNamekey = item.key.substring(idx+1, len); 
+                this.fileNamekey = fileNamekey;
+            },
+            dragEnterFolder(evt,item,index){
+                this.selectFolderIdx = index;
+                if(this.folder_drop_map[item]){
+                    return;
+                }
+                this.folder_drop_map[item]=true;
+
+                console.log("进入元素");
+                var eo = evt || event;
+                eo.preventDefault();
+               
+                this.folderNamekey = item;
+                this.moveFileFolder = true;
+                this.moveFiles.destKey = item + this.fileNamekey;
+                document.ondragend = (e)=>{
+                    this.$store.dispatch("POST_RENAME_FILE",this.moveFiles).then( res => {
+                        console.log("moveRes",res);
+                        this.selectFileIdx = null;
+                        if( res.error == 614 ){
+                            this.visibleFileExists = true;
+                        }
+                        this.getData();
+                        document.ondragend = null;
+                    })
+                }
+            },
+            // dragendFile(evt,item){
+            //     console.log("拖放结束",)
+            // },
+            dragLeaveFolder(evt,item){
+                if(!this.folder_drop_map[item]){
+                    this.selectFolderIdx = null;
+                    document.ondragend = null;
+                    return;
+                }
+                this.folder_drop_map[item] = false;
+            },
+            dragOverFile(evt,item){
+                 var eo = evt || event;
+                eo.preventDefault();
+                this.changeDom = eo.currentTarget;
+                this.endX = eo.clientX;
+                this.endY = eo.clientY;
+                if( this.endX - this.startX >= 0 ) {
+                    this.$refs.parent.insertBefore(this.moveDom, this.changeDom.nextSibling);
+                } else {
+                    this.$refs.parent.insertBefore(this.moveDom, this.changeDom)
+                }
             },
 
-            // dragEnterFiles(item){
-            //     console.log("123item",item)
-
-            //     this.folderNamekey = item;
-                
-
-            //     document.onmouseup = () =>{
-            //         console.log("5555")
-            //         document.onmousemove = null;
-            //         this.moveFiles.destKey = `${item}${localStorage.fileName}` ;
-            //         if(this.selectedFileFolder){
-            //             this.selectedFileFolder = false;
-            //             this.$store.dispatch("POST_RENAME_FILE",this.moveFiles).then( res => {
-            //                 console.log("res",res)
-            //                 if(res.error == 0){
-            //                     Message({
-            //                         type:'success',
-            //                         message:"成功文件移动"
-            //                     });
-            //                 }
-            //                 if(res.error == 614){
-            //                     this.visibleFileExists = true;
-            //                 }
-            //                 this.getData();
-            //             })
-            //         }
-            //     }
-                
-            // },
-            // moveFile(item,index){
-            //     console.log("item",item);
-            //     this.selectFolderIdx = null;
-            //     this.selectFileIdx = index;
-            //     this.fileNamekey=item.key 
-            //     let idx = item.key.lastIndexOf('/');
-            //     let len = item.key.length;
-            //     let fileName = item.key.substring(idx+1, len);
-            //     localStorage.setItem('fileName',fileName)
-
-            //     document.onmousemove = (evt)=> { 
-            //         // evt.preventDefault();
-            //         this.moveFiles.srcKey = item.key;
-            //         this.selectedFileFolder = true;
-            //     };
-            //     document.onmouseup = () => {
-            //         document.onmousemove = null;
-            //     };
-
-            // },
-            // fileExists(){
-            //     this.visibleFileExists = false;
-            // },
+            fileExists(){
+                this.visibleFileExists = false;
+            },
             comEvent(){
                 this.visibleDetList = false;
                 this.visibleMenuList = false;
@@ -494,7 +495,6 @@
             },
             closeBtn(data){
                 this.propertyShow = data.propertyShow;
-                // this.visibleDetList = false;
             },
             closeDialog(){
                 this.saveType = false;
@@ -533,8 +533,7 @@
             copyFile(){
                 this.visibleDetList = false;
                 // this.copyFileParams.srcKey = this.copySrcKey;
-                localStorage.setItem("copySrcKey",this.copySrcKey)
-                
+                localStorage.setItem("copySrcKey",this.copySrcKey);
             },
             pasteFile(val){
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
@@ -580,13 +579,11 @@
             },
             deleteFileFolder(){
                 if(this.visibleCommon){
-                    console.log("11121322")
                     this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then( res =>{
                         this.visibleOkCancel = false;
                         this.getData();
                     })
                 }else{
-                    console.log("55")
                     this.$store.dispatch("POST_DELETE_FOLDER",this.deleteFolderParams).then( res =>{
                         this.visibleOkCancel = false;
                         this.getData();
@@ -595,7 +592,6 @@
             },
             //重命名文件
             renameFile(){
-                
                 this.visibleDetList = false;
                 this.visibleRename = true;
             },
