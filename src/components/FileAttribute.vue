@@ -71,9 +71,6 @@
         top:0;
         padding: 10px;
         border-radius: 8px;
-        // :nth-child(1){
-            
-        // }
         .closeBtn{
             display: flex;
             justify-content: space-between;

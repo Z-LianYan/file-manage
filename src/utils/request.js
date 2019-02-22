@@ -67,7 +67,7 @@
         method:'POST',
         data:data,
         headers:{
-          'eryi-token':'19ea81fe-6ab3-49ff-9585-e830600c2fb4'
+          'eryi-token':'19ea81fe-6ab3-49ff-9585-e830600c2fb4',
         }
       }).then((res)=>{
         resolve(res.data);

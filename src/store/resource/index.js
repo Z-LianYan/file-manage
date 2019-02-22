@@ -57,14 +57,7 @@ const resouceFile	 = {
 		POST_UPLOADING_FILE({commit,state},requestData){
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_UPLOADING_FILE,requestData,{isLoading:true}).then((res)=>{
-					if(res.error==0){
-						resolve(res);
-					}else{
-						Message({
-							type:'error',
-							message:res.message
-						});	
-					}
+					resolve(res);
 				})	
 			});	
 		},
@@ -102,12 +95,6 @@ const resouceFile	 = {
 			return new Promise((resolve,reject)=>{
 				HttpUtil.post(apiMap.POST_RENAME_FILE,requestData,{isLoading:true}).then((res)=>{
 					resolve(res);
-					if(res.error == 0){
-						Message({
-							type:'success',
-							message:"成功移动文件"
-						});
-					}
 				})	
 			});	
 	   	},
