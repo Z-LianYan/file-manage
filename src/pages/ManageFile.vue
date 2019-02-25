@@ -25,7 +25,6 @@
                     @click.stop="onSelectedFolder(index)"
                     @mousedown.stop="onSelectedFolder(index)"
                     @dragenter="dragEnterFolder($event,item,index)"
-                    @dragover.prevent="handlerDragOver"
                     @dragleave="dragLeaveFolder($event,item)">
                         <img 
                         src="@/assets/img/folder.png" 
@@ -40,10 +39,11 @@
                     v-for="(item,index) in this.resouceData.items"
                     :key="index"
                     class="folder"
+                    id="file_name_item"
                     draggable="true"
                     :class="selectFileIdx == index? 'active':''"
                     @contextmenu.prevent.stop="showRightMenu(item,index)"
-                    @click.stop="onSelectedFile(index)"
+                    @click.stop="onSelectedFile($event,index)"
                     @mousedown.stop="fileDown(index)"
                     @dragstart.stop="dragStartFile($event,item,index)"
                     @dragover.stop="dragOverFile($event,item)">
@@ -123,9 +123,9 @@
                 </el-form-item>
                 <el-form-item 
                 label="重命名" 
-                prop="renameDestKey">
+                prop="destKey">
                     <el-input 
-                    v-model="renameFileParams.renameDestKey" 
+                    v-model="renameFileParams.destKey" 
                     @keyup.enter.native="submitRenameForm('renameFile')"></el-input>
                 </el-form-item>
             </el-form>
@@ -142,19 +142,6 @@
         </el-dialog>
 
         <el-dialog
-        :visible.sync="visibleFileExists"
-        :modal-append-to-body="false"
-        align="center"
-        width='20%'>
-            <ReplaceFile
-            :moveFiles='moveFiles'
-            :onGetData='getData'
-            :onFileExists='fileExists'
-            :fileNamekey='fileNamekey'
-            :folderNamekey='folderNamekey'/>
-        </el-dialog>
-
-        <el-dialog
         :visible.sync="visibleRenameFileExists"
         :modal-append-to-body="false"
         align="center"
@@ -164,6 +151,7 @@
             :onGetData='getData'
             :onFileExists='fileExists'
             :fileNamekey='fileNamekey'
+            :folderNamekey='folderNamekey'
             />
         </el-dialog>
         
@@ -187,7 +175,7 @@
     import FileFolderMenu from '@/components/FileFolderMenu';
     import HeaderCom from '@/components/HeaderCom';
     import ReplaceFile from '@/components/ReplaceFile';
-
+    // import _ from 'lodash';
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
         ".html":require("@/assets/img/html_icon.png"),
@@ -237,20 +225,14 @@
                     srcKey:'',
                     destKey:'',
                     isForce:0,
-                    renameDestKey:''
                 },
                 renameFileRules:{
-                    renameDestKey: [
+                    destKey: [
                         { required: true, message: '请输入文件夹名', trigger: 'blur' },
-                        { pattern: /^((?!\/|\s+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件名称不能包含空格及/ | \\ * + : ? " < >字符' }
+                        { pattern: /^((?!\/|\+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件名称不能包含空格及/ | \\ * + : ? " < >字符' }
                     ]
                 },
                 copyFileParams:{
-                    srcKey:'',
-                    destKey:'',
-                    isForce:''
-                },
-                moveFiles:{
                     srcKey:'',
                     destKey:'',
                     isForce:''
@@ -266,7 +248,6 @@
                 visibleOkCancel:false,
                 visibleCopyExists:false,
                 selectedFileFolder:false,
-                visibleFileExists:false,
                 visibleRenameFileExists:false,
                 moveFileFolder:false,
                 left:"",
@@ -282,7 +263,7 @@
                     files:[{
                         name:"",
                         key:"",
-                        force:""
+                        force:0
                     }]
                 },
                 fileLists:[],
@@ -304,9 +285,6 @@
             ReplaceFile
         },
         methods:{
-            handlerDragOver(){
-
-            },
             createFile(){
                this.$store.dispatch("POST_CREATE_FILE",this.createFileData).then((res)=>{
                    this.getData();
@@ -335,7 +313,7 @@
                 this.selectFileIdx = null;
                 this.selectFolderIdx = index;
             },
-            onSelectedFile(index){
+            onSelectedFile(e,index){
                 this.visibleDetList = false;
                 this.visibleMenuList = false;
                 this.selectFolderIdx = null;
@@ -346,77 +324,54 @@
                 this.selectFileIdx = index;
             },
             dragStartFile(evt,item,index){
-                console.log("evt",evt.dataTransfer)
                 var eo = evt || event;
                 this.moveDom = eo.currentTarget;
                 this.startX = eo.clientX;
                 this.startY = eo.clientY;
-                this.moveFiles.srcKey = item.key
+                this.renameFileParams.srcKey = item.key;
                 let idx = item.key.lastIndexOf('/');
                 let len = item.key.length;
                 let fileNamekey = item.key.substring(idx+1, len); 
                 this.fileNamekey = fileNamekey;
             },
             uploadFile(evt){
-                
-                console.log("888888",evt.dataTransfer.files)
-                // console.log("666666",evt.dataTransfer.files[0].name)
-
-                // let fileData = evt.dataTransfer.files;
-                // let createData = this.createFileData
-                
-                // let fileName = fileData[0].name;
-
-                // const formData = new FormData();
-
-                // for(var i=0; i <  fileData.length; i++){
-                    
-                //     formData.append('file', fileData[i]);
-                //     console.log("formData",formData.get("file"))
-
-
-
-
-
-
-
-                // }
-
-                            
-
-                // this.$store.dispatch("POST_UPLOADING_FILE",formData).then( res => {
-                //     console.log("resUpload",res)
-
-                //     for(var i=0; i < fileData.length; i++){
-                //         for(var j=0; j < this.createFileData.files.length; j++){
-                //             this.createFileData.files[j].name = res;
-                //             this.createFileData.files[j].key = `${localStorage.folderPath ? localStorage.folderPath:''}${fileData[i].name}`;
-                //         }
-
-                //     }
-
-                //     console.log('555555',this.createFileData)
-
-
-
-                    
-                //     // this.createFileData.files.map((itm,idx)=>{
-                //     //     itm.name = res;
-                //     //     itm.key = `${localStorage.folderPath ? localStorage.folderPath:''}${fileName}`
-                //     // })
-
-
-
-                //     this.$store.dispatch('POST_CREATE_FILE',this.createFileData).then( res => {
-                //         console.log("上传成功")
-                //         this.getData();
-                //     })
-
-                // })
-                
-
-
-
+                let fileData = evt.dataTransfer.files;
+                let createData = this.createFileData.files;
+                const formData = new FormData();
+                for(var i=0; i < fileData.length; i++){
+                    let fileName = fileData[i].name;
+                    this.fileNamekey = fileData[i].name;
+                    formData.append('file', fileData[i]);
+                    new Promise((resolve,reject)=>{
+                        this.$store.dispatch("POST_UPLOADING_FILE",formData).then( res => {
+                            resolve(res);
+                            createData.map((item,index)=>{
+                                item.name = res
+                                item.key = `${localStorage.folderPath ? localStorage.folderPath:''}${fileName}`
+                            })
+                        })
+                    }).then((res)=>{
+                        this.uploaderCreateFile(fileName);
+                    })
+                }
+            },
+            uploaderCreateFile(fileName){
+                this.$store.dispatch('POST_CREATE_FILE',this.createFileData).then( res => {
+                    var item=res.data[0];
+                    if( item.error == 614 ){
+                        this.isConfirmReplace(fileName);
+                    }
+                    if( res.error == 0 ){
+                        this.getData();
+                    }
+                    this.createFileData.files[0].force = 0;
+                })
+            },
+            isConfirmReplace(fileName){
+                this.$confirm(`该目录中已存在${fileName}文件确定要替换吗`).then( _ => {
+                    this.createFileData.files[0].force = 1;
+                    this.uploaderCreateFile();
+                });
             },
             dragEnterFolder(evt,item,index){
                 this.selectFolderIdx = index;
@@ -424,20 +379,17 @@
                     return;
                 }
                 this.folder_drop_map[item]=true;
-
-                console.log("进入元素");
                 var eo = evt || event;
                 eo.preventDefault();
-               
                 this.folderNamekey = item;
                 this.moveFileFolder = true;
-                this.moveFiles.destKey = item + this.fileNamekey;
-                document.ondragend = (e)=>{
-                    this.$store.dispatch("POST_RENAME_FILE",this.moveFiles).then( res => {
+                this.renameFileParams.destKey = item + this.fileNamekey;
+                document.ondragend = (e)=> {
+                    this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
                         console.log("moveRes",res);
                         this.selectFileIdx = null;
                         if( res.error == 614 ){
-                            this.visibleFileExists = true;
+                            this.visibleRenameFileExists = true;
                         }
                         if(res.error == 0){
                             Message({
@@ -472,8 +424,9 @@
             },
 
             fileExists(){
-                this.visibleFileExists = false;
                 this.visibleRenameFileExists = false;
+                this.uploadFileExists = false;
+                this.renameFileParams.destKey = '';
             },
             comEvent(){
                 this.visibleDetList = false;
@@ -660,12 +613,6 @@
                     })
                 }
             },
-
-
-
-
-
-
             
             //重命名文件
             renameFile(){
@@ -673,12 +620,14 @@
                 this.visibleRename = true;
             },
             renameFileSend(){
-                let renameFileName = `${localStorage.folderPath? localStorage.folderPath:''}${this.renameFileParams.renameDestKey}`
-                this.renameFileParams.destKey = renameFileName
+
+                let renameFileName = `
+                    ${localStorage.folderPath? localStorage.folderPath:''}
+                    ${this.renameFileParams.destKey}`;
+                this.renameFileParams.destKey = renameFileName;
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res =>{
                     if(res.error == 614){
-                        console.log("614")
-                        // this.visibleFileExists = true;
+                        console.log("614");
                         this.visibleRenameFileExists = true;
                     }
                     if(res.error == 0){
@@ -705,15 +654,6 @@
             resetRenameForm(formName) {
                 this.$refs[formName].resetFields();
             },
-
-
-
-
-
-
-
-
-
             drag(e){
                 console.log("1123")
                 e.preventDefault();
@@ -731,7 +671,6 @@
                     document.onmousemove = null;
                 };
             },
-
         },
         mounted(){
             this.getData();
@@ -782,7 +721,12 @@
                         height: 55px;
                     }
                     .fileName{
+                        width: 60px;
+                        overflow: hidden;
+                        text-overflow:ellipsis;
+                        white-space: nowrap;
                         text-align: center;
+
                     }
                     &.active{
                         background-color: #ccc;

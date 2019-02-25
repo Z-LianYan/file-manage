@@ -86,6 +86,7 @@
         }
         .formItem{
             margin-top: 30px;
+            width: 250px;
         }
         .comlabel{
             color: #8B8B7A;

@@ -28,18 +28,15 @@
         created(){  
         },
         mounted() {
-            this.a();
         },
         methods:{
-            a(){
-                console.log("this.folderNamekey",this.folderNamekey)
-            },
             replaceFile(){
                 this.moveFiles.isForce = 1;
                 this.$store.dispatch("POST_RENAME_FILE",this.moveFiles).then( res => {
-                    this.onFileExists()
+                    this.onFileExists();
                     this.onGetData();
                     this.moveFiles.isForce = 0;
+                    this.moveFiles.destKey = '';
                     Message({
                         type:'success',
                         message:"替换成功"
