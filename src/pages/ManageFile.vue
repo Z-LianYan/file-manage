@@ -68,7 +68,9 @@
             :onSaveChange='saveChange'
             :onCopyFile='copyFile'
             :onDelete="OkCancel"
-            :onShowAttribute='showAttribute'/>
+            :onShowAttribute='showAttribute'
+            :dataClipboard='dataClipboard'
+            :onCut='cut'/>
 
             <FileAttribute 
             v-show='propertyShow' 
@@ -85,7 +87,6 @@
             v-show='visibleMenuList' 
             @onCreateFold='createFold'
             :OnPasteFile='pasteFile'/>
-
         </el-card>
 
         <el-dialog
@@ -175,6 +176,7 @@
     import FileFolderMenu from '@/components/FileFolderMenu';
     import HeaderCom from '@/components/HeaderCom';
     import ReplaceFile from '@/components/ReplaceFile';
+    import Clipboard from 'clipboard'
     // import _ from 'lodash';
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
@@ -273,6 +275,8 @@
                 changeDom:'',
                 startX:0,
                 endX:0,
+                dataClipboard:'',
+                isCutCopy:true
             }
         },
         created(){  
@@ -292,13 +296,13 @@
             },
             getIconSrc(item){
                 var extname = this.getExtName(item.key);
-                return extnameMap[extname]?extnameMap[extname]:unknow_icon;
+                return extnameMap[extname]? extnameMap[extname]:unknow_icon;
             },
             getExtName(val){
                 var pointPos=val.lastIndexOf(".");
                 var len=val.length;
                 var suffix=val.substring(pointPos, len);
-                return `.${suffix}`;
+                return `${suffix}`;
             },
             handleFile(val){
                 let index = val.lastIndexOf('/');
@@ -306,6 +310,7 @@
                 let fileName = val.substring(index+1, len);
                 return fileName;
             },
+
             //单击选中
             onSelectedFolder(index){
                 this.visibleDetList = false;
@@ -385,22 +390,25 @@
                 this.moveFileFolder = true;
                 this.renameFileParams.destKey = item + this.fileNamekey;
                 document.ondragend = (e)=> {
-                    this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
-                        console.log("moveRes",res);
-                        this.selectFileIdx = null;
-                        if( res.error == 614 ){
-                            this.visibleRenameFileExists = true;
-                        }
-                        if(res.error == 0){
-                            Message({
-                                type:'success',
-                                message:"成功移动文件"
-                            });
-                        }
-                        this.getData();
-                        document.ondragend = null;
-                    })
+                    this.genRename();
                 }
+            },
+            genRename(){
+                this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
+                    console.log("moveRes",res);
+                    this.selectFileIdx = null;
+                    if( res.error == 614 ){
+                        this.visibleRenameFileExists = true;
+                    }
+                    if(res.error == 0){
+                        Message({
+                            type:'success',
+                            message:"成功移动文件"
+                        });
+                    }
+                    this.getData();
+                    document.ondragend = null;
+                })
             },
             dragLeaveFolder(evt,item){
                 if(!this.folder_drop_map[item]){
@@ -422,7 +430,6 @@
                     this.$refs.parent.insertBefore(this.moveDom, this.changeDom)
                 }
             },
-
             fileExists(){
                 this.visibleRenameFileExists = false;
                 this.uploadFileExists = false;
@@ -443,7 +450,6 @@
             },
             pathChange(){
                 localStorage.folderPath = this.requestParams.prefix
-               
             },
             menuContainer(){
                 this.visibleMenuList = true;
@@ -464,6 +470,7 @@
                     this.attribute = item.key;
                     this.renameFileParams.srcKey = item.key;
                     this.delFileName = item.key;
+                    this.dataClipboard = item.key;
                     this.deleteFileParams.files.map((itm,index)=>{
                         itm.name = item.key;
                     })
@@ -552,11 +559,23 @@
                     }
                 });
             },
-            //复制文件
-            copyFile(){
+            //剪切
+            cut(){
                 this.visibleDetList = false;
+                this.isCutCopy = false;
+                console.log("123")
+                localStorage.setItem("copySrcKey",this.copySrcKey);
+                
+            },
+            //复制文件
+            copyFile(e){
+                this.visibleDetList = false;
+                this.isCutCopy = true;
                 // this.copyFileParams.srcKey = this.copySrcKey;
                 localStorage.setItem("copySrcKey",this.copySrcKey);
+
+                const clipboard = new Clipboard(e.target)
+                clipboard.onClick(e)
             },
             pasteFile(val){
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
@@ -564,30 +583,39 @@
                 let copyDestKey = `${localStorage.folderPath?localStorage.folderPath:''}
                     ${copyDestKeyFile}`;
                 this.copyFileParams.destKey = copyDestKey.replace(/\s*/g,'');
-                if(val == 0){
-                    this.copyFileParams.isForce = val;
-                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
-                        this.visibleMenuList = false;
-                        if(res.error == 614){
-                            console.log("123456789")
-                            this.copyExistsFile = res;
-                            this.visibleCopyExists = true;
-                        }
-                        this.getData();
-                    })
-                }else if( val == 1){
-                    this.copyFileParams.isForce = val;
-                    this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
-                        this.visibleMenuList = false;
-                        this.visibleCopyExists = false;
-                        this.copyFileParams.isForce = 0;
-                        this.getData();
-                        Message({
-							type:'success',
-							message:"替换成功"
-						});
-                    })
-                }
+                if(this.isCutCopy){
+                    if(val == 0){
+                        this.copyFileParams.isForce = val;
+                        this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
+                            this.visibleMenuList = false;
+                            if(res.error == 614){
+                                console.log("123456789")
+                                this.copyExistsFile = res;
+                                this.visibleCopyExists = true;
+                            }
+                            this.getData();
+                        })
+                    }else if( val == 1){
+                        this.copyFileParams.isForce = val;
+                        this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
+                            this.visibleMenuList = false;
+                            this.visibleCopyExists = false;
+                            this.copyFileParams.isForce = 0;
+                            this.getData();
+                            Message({
+                                type:'success',
+                                message:"替换成功"
+                            });
+                        })
+                    }
+                }else{
+                    // renameFileParams
+                    this.renameFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
+                    this.renameFileParams.destKey = copyDestKey.replace(/\s*/g,'');
+                    this.genRename();
+                    this.isCutCopy = true;
+                    this.visibleMenuList = false;
+                }  
             },
             replaceClose(){
                 this.visibleCopyExists = false;
@@ -613,7 +641,6 @@
                     })
                 }
             },
-            
             //重命名文件
             renameFile(){
                 this.visibleDetList = false;

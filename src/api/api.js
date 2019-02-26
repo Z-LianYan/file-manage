@@ -11,7 +11,7 @@ export const POST_CREATE_FILE ='/API/v2/private/resource/createFiles'; //创建�
 export const POST_DELETE_FILE ='/API/v2/private/resource/batchDelete'; //删除文件
 
 
-export const POST_RENAME_FILE ='/API/v2/private/resource/rename'; //重命名文件
+export const POST_RENAME_FILE ='/API/v2/private/resource/rename'; //更改文件名（移动文件）
 export const POST_COPY_FILE ='/API/v2/private/resource/copy'; //复制文件
 export const POST_STATIC_HOST ='/API/common/getStaticHost'; //获取静态资源域名
 

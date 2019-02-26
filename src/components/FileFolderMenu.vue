@@ -18,7 +18,10 @@
                     </el-radio-group>
                 </div>
             </li>
-            <li @click="onCopyFile" v-show="visibleCommon">
+            <li 
+            @click="onCopyFile" 
+            :data-clipboard-text="dataClipboard" 
+            v-show="visibleCommon">
                 <i></i>
                 <span>复制</span>
                 <i></i>
@@ -26,6 +29,11 @@
             <li @click="onRenameFile" v-show="visibleCommon">
                 <i></i>
                 <span>重命名</span>
+                <i></i>
+            </li>
+            <li @click="onCut" v-show="visibleCommon">
+                <i class="fa fa-cut"></i>
+                <span>剪切</span>
                 <i></i>
             </li>
             <li @click="onDelete">
@@ -59,7 +67,9 @@
             'onCopyFile',
             'onRenameFile',
             'onDelete',
-            'onShowAttribute'
+            'onShowAttribute',
+            'dataClipboard',
+            'onCut'
         ],
         created(){  
         },
@@ -74,7 +84,6 @@
             outSaveType(){
                 this.saveType = false;
             },
-
         },
     }
 </script>

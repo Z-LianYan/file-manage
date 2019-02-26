@@ -87,6 +87,12 @@ const resouceFile	 = {
 							message:"成功复制"
 						});
 					}
+					if(res.error == 612){
+						Message({
+							type:'success',
+							message:'粘贴的文件不存在'
+						});
+					}
 				})	
 			});	
 		},

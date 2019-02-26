@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "clipboard": "^2.0.4",
     "element-ui": "^2.5.3",
     "humanize-plus": "^1.8.2",
     "lodash": "^4.17.11",
@@ -23,6 +24,7 @@
     "vuex": "^3.1.0"
   },
   "devDependencies": {
+    "array-includes": "^3.0.3",
     "autoprefixer": "^7.1.2",
     "babel-core": "^6.22.1",
     "babel-helper-vue-jsx-merge-props": "^2.0.3",
