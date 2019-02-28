@@ -13,7 +13,7 @@ Vue.filter("formatDate",function(timestamp){
 //可视化文件大小
 Vue.filter("fileSize",(val)=>{
 	if(val){
-		return Humanize.fileSize(1024 * val)
+		return Humanize.fileSize(val)
 	}
 });
 

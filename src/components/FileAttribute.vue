@@ -24,6 +24,12 @@
                         </span>
                     </el-form-item>
                     <el-form-item 
+                        label="外链">
+                        <span class="comlabel">
+                            {{attrOutsideChain}}
+                        </span>
+                    </el-form-item>
+                    <el-form-item 
                         label="上传时间">
                         <span class="comlabel">
                             {{propertyData.putTime|formatDate}}
@@ -42,7 +48,7 @@
             return{
             }
         },
-        props:['attributeTitle','propertyData','onDrag','left','top',],
+        props:['attributeTitle','propertyData','onDrag','left','top','attrOutsideChain'],
         created(){  
         },
         mounted() {
@@ -63,7 +69,7 @@
 
 <style lang="scss">
     #attribute-box{
-        width: 280px;
+        min-width: 350px;
         background-color: #fff;
         border:1px solid #ccc;
         position:fixed;
@@ -86,7 +92,7 @@
         }
         .formItem{
             margin-top: 30px;
-            width: 250px;
+            // width: 250px;
         }
         .comlabel{
             color: #8B8B7A;

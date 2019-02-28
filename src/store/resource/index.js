@@ -157,14 +157,9 @@ const resouceFile	 = {
 		//获取静态资域名
 		POST_STATIC_HOST({commit,state},requestData){
 			return new Promise((resolve,reject)=>{
-				HttpUtil.post(apiMap.POST_STATIC_HOST,requestData,{isLoading:true}).then((res)=>{
+				HttpUtil.get(apiMap.POST_STATIC_HOST,requestData,{isLoading:true}).then((res)=>{
 					if(res.error==0){
 						resolve(res);
-					}else{
-						Message({
-							type:'error',
-							message:res.message
-						});	
 					}
 				})	
 			});	

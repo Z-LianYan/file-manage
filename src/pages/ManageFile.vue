@@ -1,6 +1,9 @@
 <template>
-    <div class="manage_container">
-        <el-card class="card-box">
+    <div 
+    class="manage_container" 
+    @dragenter="fileEnterStatus($event)" 
+    @dragleave="fileLeaveStatus($event)">
+        <el-card class="card-box" :class="uploadEnterStarus? 'active':''">
 
             <HeaderCom
             :requestParams='requestParams'
@@ -8,6 +11,8 @@
             :onPathChange='pathChange'
             :onAdvance='advance'
             :onGetDAata='getData'/>
+
+            
             
             <div 
             class="folder-box" 
@@ -40,8 +45,9 @@
                     :key="index"
                     class="folder"
                     id="file_name_item"
-                    draggable="true"
                     :class="selectFileIdx == index? 'active':''"
+                    @dblclick="openFile(item)"
+                    draggable="true"
                     @contextmenu.prevent.stop="showRightMenu(item,index)"
                     @click.stop="onSelectedFile($event,index)"
                     @mousedown.stop="fileDown(index)"
@@ -56,6 +62,7 @@
                         </span>
                     </li>
                 </ul>
+                
             </div>
 
             <FileFolderMenu
@@ -70,7 +77,9 @@
             :onDelete="OkCancel"
             :onShowAttribute='showAttribute'
             :dataClipboard='dataClipboard'
-            :onCut='cut'/>
+            :onCut='cut'
+            :onCopyOutsideChain='copyOutsideChain'
+            :outsideChain='outsideChain'/>
 
             <FileAttribute 
             v-show='propertyShow' 
@@ -79,7 +88,8 @@
             @onClose="closeBtn" 
             :onDrag='drag'
             :left='left'
-            :top='top'/>
+            :top='top'
+            :attrOutsideChain='attrOutsideChain'/>
 
             <NewContainerMenu 
             :left='left' 
@@ -110,6 +120,14 @@
         </el-dialog>
 
         <el-dialog
+        :visible.sync="isVisibleImg"
+        :modal-append-to-body="false"
+        align='center'
+        width='50%'>
+            <img :src="imgSrc" alt="">
+        </el-dialog>
+        
+        <el-dialog
         :visible.sync="visibleRename"
         :modal-append-to-body="false"
         width='30%'>
@@ -136,8 +154,8 @@
         :visible.sync="visibleOkCancel"
         :modal-append-to-body="false"
         align='center'
-        width='20%'>
-            <el-row style="marginBottom:20px;">您确定要删除 {{visibleCommon?handleFile(delFileName)+'文件':handleFolder(delFileName)+'文件夹'}}吗？</el-row>
+        width='30%'>
+            <div style="marginBottom:20px;">您确定要删除 {{visibleCommon?handleFile(delFileName)+'文件':handleFolder(delFileName)+'文件夹'}}吗？</div>
             <el-button type="success" @click="deleteFileFolder">确定</el-button>
             <el-button type="success" @click="cancel">取消</el-button>
         </el-dialog>
@@ -176,14 +194,14 @@
     import FileFolderMenu from '@/components/FileFolderMenu';
     import HeaderCom from '@/components/HeaderCom';
     import ReplaceFile from '@/components/ReplaceFile';
-    import Clipboard from 'clipboard'
+    // import Clipboard from 'clipboard'
     // import _ from 'lodash';
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
         ".html":require("@/assets/img/html_icon.png"),
         ".zip":require("@/assets/img/zip.png"),
     };
-    var folder_icon = require("@/assets/img/file_icon.png")
+    var folder_icon = require("@/assets/img/file_icon.png");
     var unknow_icon = require("@/assets/img/file_icon.png");
 
 
@@ -252,6 +270,7 @@
                 selectedFileFolder:false,
                 visibleRenameFileExists:false,
                 moveFileFolder:false,
+                isVisibleImg:false,
                 left:"",
                 top:"",
                 history:[],
@@ -276,7 +295,12 @@
                 startX:0,
                 endX:0,
                 dataClipboard:'',
-                isCutCopy:true
+                isCutCopy:true,
+                staticDns:'',
+                outsideChain:'',
+                attrOutsideChain:'',
+                uploadEnterStarus:false,
+                imgSrc:''
             }
         },
         created(){  
@@ -310,7 +334,13 @@
                 let fileName = val.substring(index+1, len);
                 return fileName;
             },
-
+            openFile(item){
+                let images = item.mimeType.split('/')
+                if(images[0] == 'image'){
+                    this.imgSrc = this.staticDns + item.key + `?rm=${Math.floor(Math.random()*10)}`;
+                    this.isVisibleImg = true;
+                }
+            },
             //单击选中
             onSelectedFolder(index){
                 this.visibleDetList = false;
@@ -328,16 +358,13 @@
                 this.selectFolderIdx = null;
                 this.selectFileIdx = index;
             },
-            dragStartFile(evt,item,index){
-                var eo = evt || event;
-                this.moveDom = eo.currentTarget;
-                this.startX = eo.clientX;
-                this.startY = eo.clientY;
-                this.renameFileParams.srcKey = item.key;
-                let idx = item.key.lastIndexOf('/');
-                let len = item.key.length;
-                let fileNamekey = item.key.substring(idx+1, len); 
-                this.fileNamekey = fileNamekey;
+            fileEnterStatus(){
+                // console.log("5656")
+                this.uploadEnterStarus = true;
+            },
+            fileLeaveStatus(){
+                // console.log("8989")
+                this.uploadEnterStarus = false;
             },
             uploadFile(evt){
                 let fileData = evt.dataTransfer.files;
@@ -378,12 +405,26 @@
                     this.uploaderCreateFile();
                 });
             },
+            dragLeaveFolder(evt,item){
+                console.log("离开",item)
+                // console.log('离开folder_drop_map',this.folder_drop_map)
+                if(!this.folder_drop_map[item]){
+                    this.selectFolderIdx = null;
+                    document.ondragend = null;
+                    return;
+                }
+                this.folder_drop_map[item] = false;
+            },
             dragEnterFolder(evt,item,index){
+                console.log("进入",item)
+                // console.log('进入folder_drop_map',this.folder_drop_map)
                 this.selectFolderIdx = index;
                 if(this.folder_drop_map[item]){
                     return;
                 }
                 this.folder_drop_map[item]=true;
+
+            
                 var eo = evt || event;
                 eo.preventDefault();
                 this.folderNamekey = item;
@@ -394,6 +435,10 @@
                 }
             },
             genRename(){
+
+                console.log("987");
+
+
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
                     console.log("moveRes",res);
                     this.selectFileIdx = null;
@@ -410,24 +455,27 @@
                     document.ondragend = null;
                 })
             },
-            dragLeaveFolder(evt,item){
-                if(!this.folder_drop_map[item]){
-                    this.selectFolderIdx = null;
-                    document.ondragend = null;
-                    return;
-                }
-                this.folder_drop_map[item] = false;
+            
+            dragStartFile(evt,item,index){
+                var eo = evt || event;
+                this.moveDom = eo.currentTarget;
+                this.startX = eo.clientX;
+                this.startY = eo.clientY;
+                this.renameFileParams.srcKey = item.key;
+                let idx = item.key.lastIndexOf('/');
+                let len = item.key.length;
+                let fileNamekey = item.key.substring(idx+1, len); 
+                this.fileNamekey = fileNamekey;
             },
             dragOverFile(evt,item){
-                var eo = evt || event;
-                eo.preventDefault();
-                this.changeDom = eo.currentTarget;
-                this.endX = eo.clientX;
-                this.endY = eo.clientY;
+                // console.log("移动",item);
+                this.changeDom = evt.currentTarget;
+                this.endX = evt.clientX;
+                this.endY = evt.clientY;
                 if( this.endX - this.startX >= 0 ) {
                     this.$refs.parent.insertBefore(this.moveDom, this.changeDom.nextSibling);
                 } else {
-                    this.$refs.parent.insertBefore(this.moveDom, this.changeDom)
+                    this.$refs.parent.insertBefore(this.moveDom, this.changeDom);
                 }
             },
             fileExists(){
@@ -446,6 +494,7 @@
                 this.$store.dispatch("POST_RESOURCE_GETLIST",this.requestParams).then((res)=>{
                     console.log("res",res);
                     this.resouceData = res.data;
+                    this.getStaticDns();
                 })
             },
             pathChange(){
@@ -471,6 +520,8 @@
                     this.renameFileParams.srcKey = item.key;
                     this.delFileName = item.key;
                     this.dataClipboard = item.key;
+                    this.attrOutsideChain = this.staticDns + item.key;
+                    this.outsideChain = this.staticDns + item.key +`?rm=${Math.floor(Math.random()*10)}`;
                     this.deleteFileParams.files.map((itm,index)=>{
                         itm.name = item.key;
                     })
@@ -563,19 +614,17 @@
             cut(){
                 this.visibleDetList = false;
                 this.isCutCopy = false;
-                console.log("123")
                 localStorage.setItem("copySrcKey",this.copySrcKey);
-                
             },
             //复制文件
             copyFile(e){
                 this.visibleDetList = false;
                 this.isCutCopy = true;
-                // this.copyFileParams.srcKey = this.copySrcKey;
                 localStorage.setItem("copySrcKey",this.copySrcKey);
-
-                const clipboard = new Clipboard(e.target)
-                clipboard.onClick(e)
+                Message({
+                    type:'success',
+                    message:'已复制文件'
+                })
             },
             pasteFile(val){
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
@@ -589,7 +638,6 @@
                         this.$store.dispatch("POST_COPY_FILE",this.copyFileParams).then( res =>{
                             this.visibleMenuList = false;
                             if(res.error == 614){
-                                console.log("123456789")
                                 this.copyExistsFile = res;
                                 this.visibleCopyExists = true;
                             }
@@ -616,6 +664,19 @@
                     this.isCutCopy = true;
                     this.visibleMenuList = false;
                 }  
+            },
+            getStaticDns(){
+                this.$store.dispatch('POST_STATIC_HOST').then((res)=>{
+                    console.log("staticDns",res);
+                    this.staticDns = res.data;
+                })
+            },
+            copyOutsideChain(e){
+                this.visibleDetList = false;
+                Message({
+                    type:'success',
+                    message:'外链已复制到粘贴板'
+                })
             },
             replaceClose(){
                 this.visibleCopyExists = false;
@@ -647,14 +708,12 @@
                 this.visibleRename = true;
             },
             renameFileSend(){
-
                 let renameFileName = `
                     ${localStorage.folderPath? localStorage.folderPath:''}
                     ${this.renameFileParams.destKey}`;
                 this.renameFileParams.destKey = renameFileName;
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res =>{
                     if(res.error == 614){
-                        console.log("614");
                         this.visibleRenameFileExists = true;
                     }
                     if(res.error == 0){
@@ -682,7 +741,6 @@
                 this.$refs[formName].resetFields();
             },
             drag(e){
-                console.log("1123")
                 e.preventDefault();
                 var target = document.getElementById('attribute-box');
                 let disX = e.clientX - target.offsetLeft;
@@ -715,7 +773,11 @@
 </script>
 
 <style lang="scss" scope>
+    .active{
+        background-color: red;
+    }
     .manage_container{
+        
         .card-box{
             position: fixed;
             top: 0;
@@ -725,6 +787,7 @@
             margin:10px;
             width:auto;
             background-color: #ebebeb;
+            // background-color: red;
             .folder-box{
                 position: absolute;
                 top: 0;

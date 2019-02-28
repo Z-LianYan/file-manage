@@ -19,11 +19,19 @@
                 </div>
             </li>
             <li 
-            @click="onCopyFile" 
-            :data-clipboard-text="dataClipboard" 
+            v-clipboard:copy="dataClipboard"
+            v-clipboard:success="onCopyFile" 
             v-show="visibleCommon">
                 <i></i>
                 <span>复制</span>
+                <i></i>
+            </li>
+            <li
+            v-clipboard:copy="outsideChain"
+            v-clipboard:success="onCopyOutsideChain"
+            v-show="visibleCommon">
+                <i></i>
+                <span>复制外链</span>
                 <i></i>
             </li>
             <li @click="onRenameFile" v-show="visibleCommon">
@@ -69,7 +77,9 @@
             'onDelete',
             'onShowAttribute',
             'dataClipboard',
-            'onCut'
+            'onCut',
+            'onCopyOutsideChain',
+            'outsideChain'
         ],
         created(){  
         },

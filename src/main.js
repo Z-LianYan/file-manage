@@ -11,9 +11,12 @@ import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 
 import '@/common/filters';
-
-
 Vue.use(ElementUI);
+
+import VueClipboard from 'vue-clipboard2'
+Vue.use(VueClipboard)
+
+
 
 
 new Vue({
