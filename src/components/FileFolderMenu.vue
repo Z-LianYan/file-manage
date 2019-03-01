@@ -59,6 +59,7 @@
 </template>
 
 <script>
+    import {Message} from 'element-ui';
     export default {
         name:"stockDetail",
         data(){
@@ -69,17 +70,16 @@
         props:[
             'left',
             'top',
+            'onGetData',
             'changeSaveParams',
             'visibleCommon',
-            'onSaveChange',
-            'onCopyFile',
             'onRenameFile',
             'onDelete',
             'onShowAttribute',
             'dataClipboard',
             'onCut',
-            'onCopyOutsideChain',
-            'outsideChain'
+            'outsideChain',
+            'copySrcKey'
         ],
         created(){  
         },
@@ -93,6 +93,35 @@
             },
             outSaveType(){
                 this.saveType = false;
+            },
+            onSaveChange(){
+                this.$emit("onCloseMenu",{visibleDetList:false})
+                this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then( res =>{
+                    // this.closeDialog();
+                    this.onGetData();
+                }) 
+            },
+            onCopyFile(e){
+                this.$emit("on_copy_file",{
+                    visibleDetList:false,
+                    isCutCopy:true
+                });
+                // this.visibleDetList = false;
+                // this.isCutCopy = true;
+                localStorage.setItem("copySrcKey",this.copySrcKey);
+                Message({
+                    type:'success',
+                    message:'已复制文件'
+                })
+            },
+            onCopyOutsideChain(e){
+                // this.visibleDetList = false;
+
+                this.$emit("onOutSideChain",{ visibleDetList:false })
+                Message({
+                    type:'success',
+                    message:'外链已复制到粘贴板'
+                })
             },
         },
     }

@@ -20,13 +20,11 @@
             <el-col :span="20">
                 <el-input 
                     v-model="requestParams.prefix"
-                    @keyup.enter.native="onGetDAata"
+                    @keyup.enter.native="onGetData"
                     @input ='onPathChange'>
                 </el-input>
             </el-col>
             <el-col :span='2' align='center'>
-
-
                 <el-upload
                 class="upload-demo"
                 action="/API/common/upload"
@@ -57,10 +55,8 @@
         },
         props:[
             'requestParams',
-            'onGoback',
-            'onPathChange',
-            'onAdvance',
-            'onGetDAata'
+            'history',
+            'onGetData'
         ],
         created(){ 
 
@@ -70,23 +66,35 @@
         },
         methods:{
             handleAvatarSuccess(response,file,fileList){
-                console.log("response",response);
-                console.log("file",file);
-                console.log("fileList",fileList);
-
                 this.fileLists.files.map((itm,idx)=>{
                     itm.name = file.response,
                     itm.key = `${localStorage.folderPath ? localStorage.folderPath:''}${file.name}`
                 })
-                console.log("localStorage.folderPath",localStorage.folderPath)
-                console.log("this.fileLists.files",this.fileLists.files)
-
-
                 this.$store.dispatch("POST_CREATE_FILE",this.fileLists).then( res => {
                     this.visibleOkCancel = false;
                     this.onGetDAata();
                 })
             },
+            onGoback(val){
+                console.log('val',val)
+                let index = val.lastIndexOf('/');
+                let second = val.lastIndexOf('/',index-1);
+                let dir = val.slice(0,second+1);
+                this.requestParams.prefix = dir;
+                console.log('dir',dir)
+                localStorage.folderPath = dir;
+                this.onGetData();
+            },
+            onAdvance(){
+                let len = this.history.length-1;
+                this.requestParams.prefix = this.history[len];
+                localStorage.folderPath = this.history[len];
+                this.onGetData();
+            },
+            onPathChange(){
+                localStorage.folderPath = this.requestParams.prefix;
+                this.onGetData();
+            }
         },
     }
 </script>

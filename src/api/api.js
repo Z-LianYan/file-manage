@@ -15,6 +15,3 @@ export const POST_RENAME_FILE ='/API/v2/private/resource/rename'; //更改文件
 export const POST_COPY_FILE ='/API/v2/private/resource/copy'; //复制文件
 export const POST_STATIC_HOST ='/API/common/getStaticHost'; //获取静态资源域名
 
-
-
-

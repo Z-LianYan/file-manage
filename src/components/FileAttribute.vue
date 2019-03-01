@@ -2,7 +2,7 @@
     <div>
         <ul 
         id="attribute-box" 
-        :style="{left:left+'px',top:top+'px'}">
+        :style="{left:left_s+'px',top:top_s+'px'}">
             <li 
             class="closeBtn"
             @mousedown="onDrag">
@@ -49,10 +49,12 @@
         name:"stockDetail",
         data(){
             return{
-                outSideChain:''
+                outSideChain:'',
+                left_s:'',
+                top_s:''
             }
         },
-        props:['attributeTitle','propertyData','onDrag','left','top','attrOutsideChain'],
+        props:['attributeTitle','propertyData','lefts','tops','attrOutsideChain'],
         created(){  
         },
         mounted() {
@@ -69,11 +71,31 @@
                     type:'success',
                     message:'外链已复制到粘贴板'
                 })
-            }
+            },
+            onDrag(e){
+                e.preventDefault();
+                var target = document.getElementById('attribute-box');
+                let disX = e.clientX - target.offsetLeft;
+                let disY = e.clientY - target.offsetTop;
+                document.onmousemove = (evt)=> { 
+                    evt.preventDefault();
+                    let lefts = evt.clientX - disX;    
+                    let tops = evt.clientY - disY;
+                    this.top_s = tops;
+                    this.left_s = lefts;
+                };
+                document.onmouseup = () => {
+                    document.onmousemove = null;
+                };
+            },
         },
         watch:{
             attrOutsideChain(){
                 this.outSideChain = this.attrOutsideChain + `?rm=${Math.floor(Math.random()*100000)}`
+            },
+            lefts(){
+                this.left_s = this.lefts;
+                this.top_s = this.tops;
             }
         },
     }

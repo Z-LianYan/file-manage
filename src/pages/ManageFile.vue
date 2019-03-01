@@ -4,10 +4,9 @@
 
             <HeaderCom
             :requestParams='requestParams'
-            :onGoback='goback'
-            :onPathChange='pathChange'
-            :onAdvance='advance'
-            :onGetDAata='getData'/>
+            :history='history'
+            :onGetData='getData'/>
+
             <div 
             class="folder-box" 
             @contextmenu="menuContainer"
@@ -63,16 +62,18 @@
             :left='left'
             :top='top'
             :changeSaveParams='changeSaveParams'
+            :onGetData='getData'
+            @onCloseMenu='closeMenuFF'
             v-show="visibleDetList"
+            :copySrcKey='copySrcKey'
+            @on_copy_file='_copy_file'
             :visibleCommon='visibleCommon'
             :onRenameFile='renameFile'
-            :onSaveChange='saveChange'
-            :onCopyFile='copyFile'
             :onDelete="OkCancel"
             :onShowAttribute='showAttribute'
             :dataClipboard='dataClipboard'
             :onCut='cut'
-            :onCopyOutsideChain='copyOutsideChain'
+            @onOutSideChain='_outside_chain'
             :outsideChain='outsideChain'/>
 
             <FileAttribute 
@@ -80,9 +81,8 @@
             :attributeTitle='attribute' 
             :propertyData='propertyData' 
             @onClose="closeBtn" 
-            :onDrag='drag'
-            :left='left'
-            :top='top'
+            :lefts='left'
+            :tops='top'
             :attrOutsideChain='attrOutsideChain'/>
 
             <NewContainerMenu 
@@ -178,14 +178,6 @@
             <el-button type="success" @click="pasteFile(1)">替换</el-button>
             <el-button type="success" @click="replaceClose">不替换</el-button>
         </el-dialog>
-
-            
-        <!-- <div 
-        
-        
-        style="position:absolute;top:0;left:0;right:0;bottom:0;backgroundColor:black;opacity:0.5;"></div> -->
-
-
     </div>
 </template>
 
@@ -272,7 +264,6 @@
                 moveFileFolder:false,
                 isVisibleImg:false,
                 isFileFolder:false,
-                isVisibleMasked:false,
                 left:"",
                 top:"",
                 history:[],
@@ -289,11 +280,8 @@
                         force:0
                     }]
                 },
-                fileLists:[],
                 fileNamekey:'',
                 folderNamekey:'',
-                changeDom:'',
-                endX:0,
                 dataClipboard:'',
                 isCutCopy:true,
                 staticDns:'',
@@ -365,16 +353,6 @@
                 this.selectFileIdx = index;
                 console.log("this.isFileFolder",this.isFileFolder);
             },
-            // fileEnterStatus(){
-            //     console.log("进123456789");
-            // },
-            // fileLeaveStatus(){
-            //     console.log("离")
-            // },
-            // uploadDrop($event){
-            //     console.log("接受")
-            //     this.uploadFile($event);
-            // },
             uploadFile(evt){
                 let fileData = evt.dataTransfer.files;
                 let createData = this.createFileData.files;
@@ -416,7 +394,6 @@
             },
             dragLeaveFolder(evt,item){
                 console.log("离开",item)
-                // console.log('离开folder_drop_map',this.folder_drop_map)
                 if(!this.folder_drop_map[item]){
                     this.selectFolderIdx = null;
                     document.ondragend = null;
@@ -425,7 +402,7 @@
                 this.folder_drop_map[item] = false;
             },
             dragEnterFolder(evt,item,index){
-                console.log("进入",item)
+                console.log("进入",item);
                 this.selectFolderIdx = index;
                 if(this.folder_drop_map[item] || this.isFileFolder){
                     return;
@@ -443,9 +420,6 @@
                 }
             },
             genRename(){
-
-                console.log("987");
-
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
                     console.log("moveRes",res);
                     this.selectFileIdx = null;
@@ -487,9 +461,6 @@
                     this.resouceData = res.data;
                     this.getStaticDns();
                 })
-            },
-            pathChange(){
-                localStorage.folderPath = this.requestParams.prefix
             },
             menuContainer(){
                 this.visibleMenuList = true;
@@ -541,21 +512,6 @@
                 let len = dirName.length;
                 return dirName[len-2];
             },
-            goback(val){
-                let index = val.lastIndexOf('/');
-                let second = val.lastIndexOf('/',index-1);
-                let dir = val.slice(0,second+1);
-                this.requestParams.prefix = dir;
-                console.log('dir',dir)
-                localStorage.folderPath = dir;
-                this.getData();
-            },
-            advance(){
-                let len = this.history.length-1;
-                this.requestParams.prefix = this.history[len];
-                localStorage.folderPath = this.history[len];
-                this.getData();
-            },
             //获取文件详情
             showAttribute(){
                 this.visibleDetList = false;
@@ -568,15 +524,8 @@
             closeBtn(data){
                 this.propertyShow = data.propertyShow;
             },
-            closeDialog(){
-                this.saveType = false;
-            },
-            saveChange(){
-                this.visibleDetList = false;
-                this.$store.dispatch("POST_CHANGE_SAVE_TYPE",this.changeSaveParams).then( res =>{
-                    this.closeDialog();
-                    this.getData();
-                }) 
+            closeMenuFF(data){
+                this.visibleDetList = data.visibleDetList;
             },
             createFold(data){
                 this.visibleCreate = data.visibleCreate; 
@@ -608,14 +557,9 @@
                 localStorage.setItem("copySrcKey",this.copySrcKey);
             },
             //复制文件
-            copyFile(e){
-                this.visibleDetList = false;
-                this.isCutCopy = true;
-                localStorage.setItem("copySrcKey",this.copySrcKey);
-                Message({
-                    type:'success',
-                    message:'已复制文件'
-                })
+            _copy_file(data){
+                this.visibleDetList = data.visibleDetList;
+                this.isCutCopy = data.isCutCopy;
             },
             pasteFile(val){
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
@@ -657,16 +601,11 @@
             },
             getStaticDns(){
                 this.$store.dispatch('POST_STATIC_HOST').then((res)=>{
-                    console.log("staticDns",res);
                     this.staticDns = res.data;
                 })
             },
-            copyOutsideChain(e){
-                this.visibleDetList = false;
-                Message({
-                    type:'success',
-                    message:'外链已复制到粘贴板'
-                })
+            _outside_chain(data){
+                this.visibleDetList = data.visibleDetList;
             },
             replaceClose(){
                 this.visibleCopyExists = false;
@@ -732,22 +671,6 @@
             resetRenameForm(formName) {
                 this.$refs[formName].resetFields();
             },
-            drag(e){
-                e.preventDefault();
-                var target = document.getElementById('attribute-box');
-                let disX = e.clientX - target.offsetLeft;
-                let disY = e.clientY - target.offsetTop;
-                document.onmousemove = (evt)=> { 
-                    evt.preventDefault();
-                    let left = evt.clientX - disX;    
-                    let top = evt.clientY - disY;
-                    this.top = top;
-                    this.left = left;
-                };
-                document.onmouseup = () => {
-                    document.onmousemove = null;
-                };
-            },
         },
         mounted(){
             this.getData();
@@ -765,105 +688,5 @@
 </script>
 
 <style lang="scss" scope>
-    .active{
-        background-color: red;
-    }
-    .manage_container{
-        
-        .card-box{
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin:10px;
-            width:auto;
-            background-color: #ebebeb;
-            // background-color: red;
-            .folder-box{
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                margin-top: 100px;
-                padding-left: 100px;
-                .folder{
-                    float: left;
-                    display: flex;
-                    height: 85px;
-                    flex-flow: column;
-                    align-items: center;
-                    margin-right: 10px;
-                    padding: 5px;
-                    align-items: center;
-                    .folderImg{
-                        width: 60px;
-                        height: 55px;
-                    }
-                    .fileName{
-                        width: 60px;
-                        overflow: hidden;
-                        text-overflow:ellipsis;
-                        white-space: nowrap;
-                        text-align: center;
-
-                    }
-                    &.active{
-                        background-color: #ccc;
-                    }
-                }
-            }
-            .contextmenu{
-                position: fixed;
-                background-color: #fff;
-                border: 1px solid #ccc;
-                li:hover{
-                    background-color: #ccc;
-                }
-                li{
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    min-width: 140px;
-                    padding: 10px;
-                    border-bottom: 1px solid #ccc;
-                    i{
-                        width: 10px;
-                    }
-                }
-                li:nth-last-child(1){
-                    border-bottom: 1px solid transparent;
-                }
-                .change-save{
-                    position: relative;
-                    .change-save-type{
-                        width: 215px;
-                        padding: 10px 7px;
-                        border: 1px solid #ccc;
-                        position: absolute;
-                        top: -1px;
-                        right: -215px;
-                        background-color: #fff;
-                    }
-                }
-                .news{
-                    position: relative;
-                    .newsContent{
-                        background-color: #fff;
-                        border: 1px solid #ccc;
-                        position: absolute;
-                        top: -1px;
-                        right: -142px;
-                        >li{
-                            display: flex;
-                            justify-content: space-around;
-                            height: 39px;
-                        }
-                    }
-
-                }
-            }
-        }
-    }
+    @import './ManageFile.scss';
 </style>
