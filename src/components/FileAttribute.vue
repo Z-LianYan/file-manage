@@ -25,7 +25,9 @@
                     </el-form-item>
                     <el-form-item 
                         label="外链">
-                        <span class="comlabel">
+                        <span class="comlabel"
+                        v-clipboard:copy="outSideChain"
+                        v-clipboard:success="onCopyFile">
                             {{attrOutsideChain}}
                         </span>
                     </el-form-item>
@@ -42,10 +44,12 @@
 </template>
 
 <script>
+    import {Message} from 'element-ui';
     export default {
         name:"stockDetail",
         data(){
             return{
+                outSideChain:''
             }
         },
         props:['attributeTitle','propertyData','onDrag','left','top','attrOutsideChain'],
@@ -60,9 +64,17 @@
                 }
                 this.$emit("onClose",data)
             },
+            onCopyFile(){
+                Message({
+                    type:'success',
+                    message:'外链已复制到粘贴板'
+                })
+            }
         },
         watch:{
-            
+            attrOutsideChain(){
+                this.outSideChain = this.attrOutsideChain + `?rm=${Math.floor(Math.random()*100000)}`
+            }
         },
     }
 </script>

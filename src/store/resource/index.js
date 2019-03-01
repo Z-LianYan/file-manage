@@ -16,7 +16,7 @@ const resouceFile	 = {
 					if(res.error==0){
 						resolve(res);
 					}else{
-						 Message({
+						Message({
 							type:'error',
 							message:res.message
 				        });	

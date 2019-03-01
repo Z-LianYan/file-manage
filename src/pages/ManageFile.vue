@@ -1,9 +1,6 @@
 <template>
-    <div 
-    class="manage_container" 
-    @dragenter="fileEnterStatus($event)" 
-    @dragleave="fileLeaveStatus($event)">
-        <el-card class="card-box" :class="uploadEnterStarus? 'active':''">
+    <div class="manage_container">
+        <el-card class="card-box">
 
             <HeaderCom
             :requestParams='requestParams'
@@ -11,9 +8,6 @@
             :onPathChange='pathChange'
             :onAdvance='advance'
             :onGetDAata='getData'/>
-
-            
-            
             <div 
             class="folder-box" 
             @contextmenu="menuContainer"
@@ -28,7 +22,7 @@
                     @dblclick="openFolder(item)"
                     @contextmenu.prevent.stop="showRightMenu(item,index)"
                     @click.stop="onSelectedFolder(index)"
-                    @mousedown.stop="onSelectedFolder(index)"
+                    @mousedown="onSelectedFolder(index)"
                     @dragenter="dragEnterFolder($event,item,index)"
                     @dragleave="dragLeaveFolder($event,item)">
                         <img 
@@ -50,9 +44,9 @@
                     draggable="true"
                     @contextmenu.prevent.stop="showRightMenu(item,index)"
                     @click.stop="onSelectedFile($event,index)"
-                    @mousedown.stop="fileDown(index)"
-                    @dragstart.stop="dragStartFile($event,item,index)"
-                    @dragover.stop="dragOverFile($event,item)">
+                    @mousedown="fileDown(index)"
+                    @dragstart="dragStartFile($event,item,index)"
+                    >
                         <img 
                         :src="getIconSrc(item)" 
                         alt="" 
@@ -123,7 +117,8 @@
         :visible.sync="isVisibleImg"
         :modal-append-to-body="false"
         align='center'
-        width='50%'>
+        width='50%'
+        @close="closeImg">
             <img :src="imgSrc" alt="">
         </el-dialog>
         
@@ -184,6 +179,13 @@
             <el-button type="success" @click="replaceClose">不替换</el-button>
         </el-dialog>
 
+            
+        <!-- <div 
+        
+        
+        style="position:absolute;top:0;left:0;right:0;bottom:0;backgroundColor:black;opacity:0.5;"></div> -->
+
+
     </div>
 </template>
 
@@ -194,8 +196,6 @@
     import FileFolderMenu from '@/components/FileFolderMenu';
     import HeaderCom from '@/components/HeaderCom';
     import ReplaceFile from '@/components/ReplaceFile';
-    // import Clipboard from 'clipboard'
-    // import _ from 'lodash';
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
         ".html":require("@/assets/img/html_icon.png"),
@@ -271,6 +271,8 @@
                 visibleRenameFileExists:false,
                 moveFileFolder:false,
                 isVisibleImg:false,
+                isFileFolder:false,
+                isVisibleMasked:false,
                 left:"",
                 top:"",
                 history:[],
@@ -290,16 +292,13 @@
                 fileLists:[],
                 fileNamekey:'',
                 folderNamekey:'',
-                moveDom:'',
                 changeDom:'',
-                startX:0,
                 endX:0,
                 dataClipboard:'',
                 isCutCopy:true,
                 staticDns:'',
                 outsideChain:'',
                 attrOutsideChain:'',
-                uploadEnterStarus:false,
                 imgSrc:''
             }
         },
@@ -335,18 +334,24 @@
                 return fileName;
             },
             openFile(item){
-                let images = item.mimeType.split('/')
+                let images = item.mimeType.split('/');
                 if(images[0] == 'image'){
-                    this.imgSrc = this.staticDns + item.key + `?rm=${Math.floor(Math.random()*10)}`;
+                    this.imgSrc = this.staticDns + item.key + `?rm=${Math.floor(Math.random()*1000000)}`;
                     this.isVisibleImg = true;
                 }
             },
+            closeImg(){
+                console.log("555")
+                this.imgSrc = ''
+            },
             //单击选中
             onSelectedFolder(index){
+                this.isFileFolder = true;
                 this.visibleDetList = false;
                 this.visibleMenuList = false;
                 this.selectFileIdx = null;
                 this.selectFolderIdx = index;
+                console.log("this.isFileFolder",this.isFileFolder)
             },
             onSelectedFile(e,index){
                 this.visibleDetList = false;
@@ -355,17 +360,21 @@
                 this.selectFileIdx = index;
             },
             fileDown(index){
+                this.isFileFolder = false;
                 this.selectFolderIdx = null;
                 this.selectFileIdx = index;
+                console.log("this.isFileFolder",this.isFileFolder);
             },
-            fileEnterStatus(){
-                // console.log("5656")
-                this.uploadEnterStarus = true;
-            },
-            fileLeaveStatus(){
-                // console.log("8989")
-                this.uploadEnterStarus = false;
-            },
+            // fileEnterStatus(){
+            //     console.log("进123456789");
+            // },
+            // fileLeaveStatus(){
+            //     console.log("离")
+            // },
+            // uploadDrop($event){
+            //     console.log("接受")
+            //     this.uploadFile($event);
+            // },
             uploadFile(evt){
                 let fileData = evt.dataTransfer.files;
                 let createData = this.createFileData.files;
@@ -417,9 +426,8 @@
             },
             dragEnterFolder(evt,item,index){
                 console.log("进入",item)
-                // console.log('进入folder_drop_map',this.folder_drop_map)
                 this.selectFolderIdx = index;
-                if(this.folder_drop_map[item]){
+                if(this.folder_drop_map[item] || this.isFileFolder){
                     return;
                 }
                 this.folder_drop_map[item]=true;
@@ -438,7 +446,6 @@
 
                 console.log("987");
 
-
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
                     console.log("moveRes",res);
                     this.selectFileIdx = null;
@@ -455,28 +462,12 @@
                     document.ondragend = null;
                 })
             },
-            
             dragStartFile(evt,item,index){
-                var eo = evt || event;
-                this.moveDom = eo.currentTarget;
-                this.startX = eo.clientX;
-                this.startY = eo.clientY;
                 this.renameFileParams.srcKey = item.key;
                 let idx = item.key.lastIndexOf('/');
                 let len = item.key.length;
                 let fileNamekey = item.key.substring(idx+1, len); 
                 this.fileNamekey = fileNamekey;
-            },
-            dragOverFile(evt,item){
-                // console.log("移动",item);
-                this.changeDom = evt.currentTarget;
-                this.endX = evt.clientX;
-                this.endY = evt.clientY;
-                if( this.endX - this.startX >= 0 ) {
-                    this.$refs.parent.insertBefore(this.moveDom, this.changeDom.nextSibling);
-                } else {
-                    this.$refs.parent.insertBefore(this.moveDom, this.changeDom);
-                }
             },
             fileExists(){
                 this.visibleRenameFileExists = false;
@@ -521,7 +512,7 @@
                     this.delFileName = item.key;
                     this.dataClipboard = item.key;
                     this.attrOutsideChain = this.staticDns + item.key;
-                    this.outsideChain = this.staticDns + item.key +`?rm=${Math.floor(Math.random()*10)}`;
+                    this.outsideChain = this.staticDns + item.key +`?rm=${Math.floor(Math.random()*1000000)}`;
                     this.deleteFileParams.files.map((itm,index)=>{
                         itm.name = item.key;
                     })
@@ -657,7 +648,6 @@
                         })
                     }
                 }else{
-                    // renameFileParams
                     this.renameFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
                     this.renameFileParams.destKey = copyDestKey.replace(/\s*/g,'');
                     this.genRename();
@@ -711,10 +701,11 @@
                 let renameFileName = `
                     ${localStorage.folderPath? localStorage.folderPath:''}
                     ${this.renameFileParams.destKey}`;
-                this.renameFileParams.destKey = renameFileName;
+                this.renameFileParams.destKey = renameFileName.replace(/\s*/ig,'');
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res =>{
                     if(res.error == 614){
                         this.visibleRenameFileExists = true;
+                        return;
                     }
                     if(res.error == 0){
 						Message({
@@ -723,6 +714,7 @@
                         });
                     }
                     this.visibleRename = false;
+                    this.renameFileParams.destKey='';
                     this.getData();
                     
                 })
@@ -794,9 +786,8 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                margin: 100px 0 0 100px;
-                // border: 1px dashed red;
-                // background-color: #fff;
+                margin-top: 100px;
+                padding-left: 100px;
                 .folder{
                     float: left;
                     display: flex;
