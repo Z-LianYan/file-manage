@@ -1,5 +1,7 @@
 .manage_container{
-        
+    .active{
+        background:#ccc;
+    }
     .card-box{
         position: fixed;
         top: 0;
@@ -16,7 +18,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            margin-top: 100px;
+            margin-top: 80px;
+            padding-top: 20px;
             padding-left: 100px;
             .folder{
                 float: left;

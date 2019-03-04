@@ -72,7 +72,7 @@
                 })
                 this.$store.dispatch("POST_CREATE_FILE",this.fileLists).then( res => {
                     this.visibleOkCancel = false;
-                    this.onGetDAata();
+                    this.onGetData();
                 })
             },
             onGoback(val){

@@ -1,14 +1,13 @@
 <template>
     <div class="manage_container">
         <el-card class="card-box">
-
             <HeaderCom
             :requestParams='requestParams'
             :history='history'
             :onGetData='getData'/>
-
             <div 
             class="folder-box" 
+            :class="isUploadStatus? 'active':''"
             @contextmenu="menuContainer"
             @click="comEvent"
             @drop="uploadFile($event)">
@@ -28,10 +27,9 @@
                         src="@/assets/img/folder.png" 
                         alt="" 
                         class="folderImg"/>
-                        <span class="fileName">{{handleFolder(item)}}</span>
+                        <span class="fileName">{{item|folderName}}</span>
                     </li>
                 </ul>
-
                 <ul ref="parent">
                     <li 
                     v-for="(item,index) in this.resouceData.items"
@@ -44,8 +42,7 @@
                     @contextmenu.prevent.stop="showRightMenu(item,index)"
                     @click.stop="onSelectedFile($event,index)"
                     @mousedown="fileDown(index)"
-                    @dragstart="dragStartFile($event,item,index)"
-                    >
+                    @dragstart="dragStartFile($event,item,index)">
                         <img 
                         :src="getIconSrc(item)" 
                         alt="" 
@@ -55,9 +52,7 @@
                         </span>
                     </li>
                 </ul>
-                
             </div>
-
             <FileFolderMenu
             :left='left'
             :top='top'
@@ -75,7 +70,6 @@
             :onCut='cut'
             @onOutSideChain='_outside_chain'
             :outsideChain='outsideChain'/>
-
             <FileAttribute 
             v-show='propertyShow' 
             :attributeTitle='attribute' 
@@ -84,7 +78,6 @@
             :lefts='left'
             :tops='top'
             :attrOutsideChain='attrOutsideChain'/>
-
             <NewContainerMenu 
             :left='left' 
             :top='top'
@@ -98,19 +91,9 @@
         :modal-append-to-body="false"
         align='center'
         width='30%'>
-            <el-form 
-            :model="newFolderName" 
-            :rules="rules" 
-            ref="newFolderNames" 
-            label-width="100px">
-                <el-form-item 
-                label="文件夹名称" 
-                prop="folderNane">
-                    <el-input 
-                    v-model="newFolderName.folderNane" 
-                    @keyup.enter.native="submitForm('newFolderNames')"></el-input>
-                </el-form-item>
-            </el-form>
+            <NewFolder
+            :onGetData='getData'
+            @onCancelFolder='cancelFolder'/>
         </el-dialog>
 
         <el-dialog
@@ -121,28 +104,15 @@
         @close="closeImg">
             <img :src="imgSrc" alt="">
         </el-dialog>
-        
+
         <el-dialog
         :visible.sync="visibleRename"
         :modal-append-to-body="false"
         width='30%'>
-            <el-form 
-            :model="renameFileParams" 
-            :rules="renameFileRules" 
-            ref="renameFile" 
-            label-width="100px">
-                <el-form-item 
-                label="文件">
-                    <span>{{renameFileParams.srcKey|fileName}}</span>
-                </el-form-item>
-                <el-form-item 
-                label="重命名" 
-                prop="destKey">
-                    <el-input 
-                    v-model="renameFileParams.destKey" 
-                    @keyup.enter.native="submitRenameForm('renameFile')"></el-input>
-                </el-form-item>
-            </el-form>
+            <RenameFile
+            :renameFileParams='renameFileParams'
+            :onGetData='getData'
+            @onCancelRename='cancelRename'/>
         </el-dialog>
 
         <el-dialog
@@ -150,11 +120,15 @@
         :modal-append-to-body="false"
         align='center'
         width='30%'>
-            <div style="marginBottom:20px;">您确定要删除 {{visibleCommon?handleFile(delFileName)+'文件':handleFolder(delFileName)+'文件夹'}}吗？</div>
-            <el-button type="success" @click="deleteFileFolder">确定</el-button>
-            <el-button type="success" @click="cancel">取消</el-button>
+            <Delete
+            :visibleOkCancel='visibleOkCancel'
+            :visibleCommon='visibleCommon'
+            :deleteFileParams='deleteFileParams'
+            :deleteFolderParams='deleteFolderParams'
+            :onGetData='getData'
+            @cancelDel='cancel'
+            :delFileName='delFileName'/>
         </el-dialog>
-
         <el-dialog
         :visible.sync="visibleRenameFileExists"
         :modal-append-to-body="false"
@@ -168,7 +142,6 @@
             :folderNamekey='folderNamekey'
             />
         </el-dialog>
-        
         <el-dialog
         :visible.sync="visibleCopyExists"
         :modal-append-to-body="false"
@@ -188,6 +161,9 @@
     import FileFolderMenu from '@/components/FileFolderMenu';
     import HeaderCom from '@/components/HeaderCom';
     import ReplaceFile from '@/components/ReplaceFile';
+    import Delete from '@/components/Delete';
+    import NewFolder from '@/components/NewFolder';
+    import RenameFile from '@/components/RenameFile';
     var extnameMap={
         ".js":require("@/assets/img/file_icon.png"),
         ".html":require("@/assets/img/html_icon.png"),
@@ -195,8 +171,6 @@
     };
     var folder_icon = require("@/assets/img/file_icon.png");
     var unknow_icon = require("@/assets/img/file_icon.png");
-
-
     export default {
         name:"stockDetail",
         data(){
@@ -221,28 +195,10 @@
                 deleteFolderParams:{
                     folder_name:""
                 },
-                createFolderParams:{
-                    folder_name:''
-                },
-                newFolderName:{
-                    folderNane:''
-                },
-                rules:{
-                        folderNane: [
-                            { required: true, message: '请输入文件夹名', trigger: 'blur' },
-                            { pattern: /^((?!\/|\s+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件夹名称不能包含空格及/ | \\ * + : ? " < >字符' }
-                        ]
-                },
                 renameFileParams:{
                     srcKey:'',
                     destKey:'',
                     isForce:0,
-                },
-                renameFileRules:{
-                    destKey: [
-                        { required: true, message: '请输入文件夹名', trigger: 'blur' },
-                        { pattern: /^((?!\/|\+|\||\\|\*|:|\?|"|<|>).)*$/gi, message: '文件名称不能包含空格及/ | \\ * + : ? " < >字符' }
-                    ]
                 },
                 copyFileParams:{
                     srcKey:'',
@@ -264,6 +220,7 @@
                 moveFileFolder:false,
                 isVisibleImg:false,
                 isFileFolder:false,
+                isUploadStatus:false,
                 left:"",
                 top:"",
                 history:[],
@@ -297,7 +254,10 @@
             NewContainerMenu,
             FileFolderMenu,
             HeaderCom,
-            ReplaceFile
+            ReplaceFile,
+            Delete,
+            NewFolder,
+            RenameFile
         },
         methods:{
             createFile(){
@@ -315,12 +275,6 @@
                 var suffix=val.substring(pointPos, len);
                 return `${suffix}`;
             },
-            handleFile(val){
-                let index = val.lastIndexOf('/');
-                let len = val.length;
-                let fileName = val.substring(index+1, len);
-                return fileName;
-            },
             openFile(item){
                 let images = item.mimeType.split('/');
                 if(images[0] == 'image'){
@@ -329,8 +283,7 @@
                 }
             },
             closeImg(){
-                console.log("555")
-                this.imgSrc = ''
+                this.imgSrc = '';
             },
             //单击选中
             onSelectedFolder(index){
@@ -339,7 +292,6 @@
                 this.visibleMenuList = false;
                 this.selectFileIdx = null;
                 this.selectFolderIdx = index;
-                console.log("this.isFileFolder",this.isFileFolder)
             },
             onSelectedFile(e,index){
                 this.visibleDetList = false;
@@ -351,9 +303,9 @@
                 this.isFileFolder = false;
                 this.selectFolderIdx = null;
                 this.selectFileIdx = index;
-                console.log("this.isFileFolder",this.isFileFolder);
             },
             uploadFile(evt){
+                this.isUploadStatus = false;
                 let fileData = evt.dataTransfer.files;
                 let createData = this.createFileData.files;
                 const formData = new FormData();
@@ -393,7 +345,6 @@
                 });
             },
             dragLeaveFolder(evt,item){
-                console.log("离开",item)
                 if(!this.folder_drop_map[item]){
                     this.selectFolderIdx = null;
                     document.ondragend = null;
@@ -402,16 +353,11 @@
                 this.folder_drop_map[item] = false;
             },
             dragEnterFolder(evt,item,index){
-                console.log("进入",item);
                 this.selectFolderIdx = index;
                 if(this.folder_drop_map[item] || this.isFileFolder){
                     return;
                 }
                 this.folder_drop_map[item]=true;
-
-            
-                var eo = evt || event;
-                eo.preventDefault();
                 this.folderNamekey = item;
                 this.moveFileFolder = true;
                 this.renameFileParams.destKey = item + this.fileNamekey;
@@ -421,7 +367,6 @@
             },
             genRename(){
                 this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res => {
-                    console.log("moveRes",res);
                     this.selectFileIdx = null;
                     if( res.error == 614 ){
                         this.visibleRenameFileExists = true;
@@ -457,7 +402,6 @@
             //获取目录下文件
             getData(){
                 this.$store.dispatch("POST_RESOURCE_GETLIST",this.requestParams).then((res)=>{
-                    console.log("res",res);
                     this.resouceData = res.data;
                     this.getStaticDns();
                 })
@@ -507,16 +451,11 @@
                 this.requestParams.prefix = val;
                 this.getData();
             },
-            handleFolder(i){
-                let dirName = i.split("/");
-                let len = dirName.length;
-                return dirName[len-2];
-            },
             //获取文件详情
             showAttribute(){
                 this.visibleDetList = false;
                 this.propertyShow = true;
-                this.$store.dispatch("POST_RESOURCE_DETAIL",this.propertyParams).then( res =>{
+                this.$store.dispatch("POST_RESOURCE_DETAIL",this.propertyParams).then( res => {
                     console.log("resProperty",res);
                     this.propertyData = res.data;
                 })
@@ -531,24 +470,8 @@
                 this.visibleCreate = data.visibleCreate; 
                 this.visibleMenuList = data.visibleMenuList;
             },
-            createFolder(){
-                let folderDirctory = `${localStorage.folderPath? localStorage.folderPath:''}
-                    ${this.newFolderName.folderNane}/`;
-                this.createFolderParams.folder_name = folderDirctory.replace(/\s*/g,'');
-                this.$store.dispatch("POST_CREATE_FOLDER",this.createFolderParams).then( res =>{
-                    this.visibleCreate = false;
-                    this.getData();
-                })
-            },
-            submitForm(formName) {
-                this.$refs[formName].validate((valid) => {
-                    if (valid) {
-                        this.createFolder();
-                    } else {
-                        console.log('error submit!!');
-                        return false;
-                    }
-                });
+            cancelFolder(data){
+                this.visibleCreate = data.visibleCreate
             },
             //剪切
             cut(){
@@ -561,10 +484,16 @@
                 this.visibleDetList = data.visibleDetList;
                 this.isCutCopy = data.isCutCopy;
             },
+            handleFile(val){
+                let index = val.lastIndexOf('/');
+                let len = val.length;
+                let fileName = val.substring(index+1, len);
+                return fileName;
+            },
             pasteFile(val){
                 this.copyFileParams.srcKey = localStorage.copySrcKey.replace(/\s*/g,'');
                 let copyDestKeyFile = this.handleFile(localStorage.copySrcKey);
-                let copyDestKey = `${localStorage.folderPath?localStorage.folderPath:''}
+                let copyDestKey = `${localStorage.folderPath? localStorage.folderPath:''}
                     ${copyDestKeyFile}`;
                 this.copyFileParams.destKey = copyDestKey.replace(/\s*/g,'');
                 if(this.isCutCopy){
@@ -615,61 +544,16 @@
                 this.visibleOkCancel = true;
                 this.visibleDetList = false;
             },
-            cancel(){
-                this.visibleOkCancel = false;
-            },
-            deleteFileFolder(){
-                if(this.visibleCommon){
-                    this.$store.dispatch("POST_DELETE_FILE",this.deleteFileParams).then( res =>{
-                        this.visibleOkCancel = false;
-                        this.getData();
-                    })
-                }else{
-                    this.$store.dispatch("POST_DELETE_FOLDER",this.deleteFolderParams).then( res =>{
-                        this.visibleOkCancel = false;
-                        this.getData();
-                    })
-                }
+            cancel(data){
+                this.visibleOkCancel = data.visibleOkCancel;
             },
             //重命名文件
             renameFile(){
                 this.visibleDetList = false;
                 this.visibleRename = true;
             },
-            renameFileSend(){
-                let renameFileName = `
-                    ${localStorage.folderPath? localStorage.folderPath:''}
-                    ${this.renameFileParams.destKey}`;
-                this.renameFileParams.destKey = renameFileName.replace(/\s*/ig,'');
-                this.$store.dispatch("POST_RENAME_FILE",this.renameFileParams).then( res =>{
-                    if(res.error == 614){
-                        this.visibleRenameFileExists = true;
-                        return;
-                    }
-                    if(res.error == 0){
-						Message({
-							type:'success',
-							message:"重命名完成"
-                        });
-                    }
-                    this.visibleRename = false;
-                    this.renameFileParams.destKey='';
-                    this.getData();
-                    
-                })
-            },
-            submitRenameForm(formName){
-                this.$refs[formName].validate((valid) => {
-                    if (valid) {
-                        this.renameFileSend();
-                    } else {
-                        console.log('error submit!!');
-                        return false;
-                    }
-                });
-            },
-            resetRenameForm(formName) {
-                this.$refs[formName].resetFields();
+            cancelRename(data){
+                this.visibleRename = data.visibleRename;
             },
         },
         mounted(){

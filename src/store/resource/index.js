@@ -129,6 +129,10 @@ const resouceFile	 = {
 				HttpUtil.post(apiMap.POST_CREATE_FOLDER,requestData,{isLoading:true}).then((res)=>{
 					if(res.error==0){
 						resolve(res);
+						Message({
+							type:'success',
+							message:'成功创建文件夹'
+						});
 					}else{
 						Message({
 							type:'error',
