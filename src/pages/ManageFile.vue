@@ -572,5 +572,105 @@
 </script>
 
 <style lang="scss" scope>
-    @import './ManageFile.scss';
+    .manage_container{
+    .active{
+        background:#ccc;
+    }
+    .card-box{
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin:10px;
+        width:auto;
+        background-color: #ebebeb;
+        // background-color: red;
+        .folder-box{
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin-top: 80px;
+            padding-top: 20px;
+            padding-left: 100px;
+            .folder{
+                float: left;
+                display: flex;
+                height: 85px;
+                flex-flow: column;
+                align-items: center;
+                margin-right: 10px;
+                padding: 5px;
+                align-items: center;
+                .folderImg{
+                    width: 60px;
+                    height: 55px;
+                }
+                .fileName{
+                    width: 60px;
+                    overflow: hidden;
+                    text-overflow:ellipsis;
+                    white-space: nowrap;
+                    text-align: center;
+
+                }
+                &.active{
+                    background-color: #ccc;
+                }
+            }
+        }
+        .contextmenu{
+            position: fixed;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            li:hover{
+                background-color: #ccc;
+            }
+            li{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                min-width: 140px;
+                padding: 10px;
+                border-bottom: 1px solid #ccc;
+                i{
+                    width: 10px;
+                }
+            }
+            li:nth-last-child(1){
+                border-bottom: 1px solid transparent;
+            }
+            .change-save{
+                position: relative;
+                .change-save-type{
+                    width: 215px;
+                    padding: 10px 7px;
+                    border: 1px solid #ccc;
+                    position: absolute;
+                    top: -1px;
+                    right: -215px;
+                    background-color: #fff;
+                }
+            }
+            .news{
+                position: relative;
+                .newsContent{
+                    background-color: #fff;
+                    border: 1px solid #ccc;
+                    position: absolute;
+                    top: -1px;
+                    right: -142px;
+                    >li{
+                        display: flex;
+                        justify-content: space-around;
+                        height: 39px;
+                    }
+                }
+
+            }
+        }
+    }
+}
 </style>
