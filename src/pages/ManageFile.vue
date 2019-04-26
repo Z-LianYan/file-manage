@@ -571,7 +571,7 @@
     }
 </script>
 
-<style lang="scss" scope>
+<style lang="scss" scoped>
     .manage_container{
     .active{
         background:#ccc;
